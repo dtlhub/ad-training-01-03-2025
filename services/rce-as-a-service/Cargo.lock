@@ -157,36 +157,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "aws-creds"
-version = "0.38.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba912106484991c456adb3364338a2534d0818bd9374b324b608074e3b55f581"
-dependencies = [
- "attohttpc",
- "home",
- "log",
- "quick-xml",
- "rust-ini",
- "serde",
- "thiserror",
- "time",
- "url",
-]
-
-[[package]]
 name = "aws-region"
 version = "0.25.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e9aed3f9c7eac9be28662fdb3b0f4d1951e812f7c64fed4f0327ba702f459b3b"
-dependencies = [
- "thiserror",
-]
-
-[[package]]
-name = "aws-region"
-version = "0.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8369408b4c9287bbaa8f5030814167b29a4999920ae45670d531d10511c3843e"
 dependencies = [
  "thiserror",
 ]
@@ -1980,8 +1954,6 @@ dependencies = [
 name = "rce-as-a-service"
 version = "0.1.0"
 dependencies = [
- "aws-creds 0.38.0",
- "aws-region 0.27.0",
  "rocket",
  "rust-s3",
  "tmpdir",
@@ -2187,8 +2159,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3df3f353b1f4209dcf437d777cda90279c397ab15a0cd6fd06bd32c88591533"
 dependencies = [
  "async-trait",
- "aws-creds 0.37.0",
- "aws-region 0.25.5",
+ "aws-creds",
+ "aws-region",
  "base64 0.22.1",
  "bytes",
  "cfg-if",

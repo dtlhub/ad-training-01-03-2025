@@ -73,8 +73,7 @@ impl Sandbox {
         let wasi = WasiCtxBuilder::new()
             .args(args)
             .inherit_network()
-            .inherit_stdio()
-            .allow_ip_name_lookup(true)
+            .inherit_stdio() // TODO: stream stdout and stderr into execution result somehow
             .preopened_dir(&host_mount, "/", DirPerms::all(), FilePerms::all())?
             .build();
 
