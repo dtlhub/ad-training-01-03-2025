@@ -1,0 +1,16 @@
+services:
+  s3:
+    build:
+      context: ./s3
+      dockerfile: Dockerfile
+    command: server -s3
+    volumes:
+      - s3_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8333"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  s3_data:
