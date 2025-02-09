@@ -1,0 +1,9 @@
+[package]
+name = "rce-as-a-service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rocket = "0.5.1"
+wasmtime = "29.0.1"
+wasmtime-wasi = "29.0.1"
