@@ -1,2 +1,0 @@
-target/
-!target/wasm32-wasip2/release/*.wasm
