@@ -1,3 +1,4 @@
+mod auth;
 mod misc;
 mod sandbox;
 mod storage;
@@ -5,31 +6,36 @@ mod storage;
 use std::net::{IpAddr, Ipv4Addr};
 
 use rocket::data::{Data, ToByteUnit};
-use rocket::{launch, post, routes};
+use rocket::{launch, post, routes, State};
 
+use crate::auth::Authenticator;
 use crate::sandbox::Sandbox;
 
-#[post("/debug", format = "plain", data = "<data>")]
-async fn debug(data: Data<'_>) {
-    let sandbox = Sandbox::new("http://localhost:8333".to_string()).unwrap();
-    println!("Sandbox created");
-
+#[post("/execute", format = "plain", data = "<data>")]
+async fn execute(data: Data<'_>, sandbox: &State<Sandbox>) {
+    // TODO: proper error handling
     let bytes = data.open(1.mebibytes()).into_bytes().await.unwrap();
-    println!("Bytes read");
     let _ = sandbox
         .execute_sandboxed(&"mybucket".to_string(), &bytes, &["echo", "hello"])
         .await
         .unwrap();
-    println!("Sandbox executed");
 }
 
 #[launch]
-fn rocket() -> _ {
+async fn rocket() -> _ {
     let mut config = rocket::Config::default();
     config.address = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
     config.port = 9091;
 
+    let s3_url = std::env::var("S3_URL").expect("S3_URL is not set");
+    let sandbox = Sandbox::new(s3_url).unwrap();
+
+    let db_url = std::env::var("DB_URL").expect("DB_URL is not set");
+    let auth = Authenticator::new(db_url).await.unwrap();
+
     rocket::build()
+        .manage(sandbox)
+        .manage(auth)
         .configure(config)
-        .mount("/api", routes![debug])
+        .mount("/api", routes![execute])
 }

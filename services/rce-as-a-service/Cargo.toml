@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 rocket = "0.5.1"
 rust-s3 = { version = "0.35.1", features = ["tokio"] }
+sqlx = { version = "0.8.3", features = ["postgres", "runtime-tokio"] }
 tmpdir = "1.0.0"
 tokio = "1.43.0"
 wasmtime = "29.0.1"
