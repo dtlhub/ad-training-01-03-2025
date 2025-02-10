@@ -27,10 +27,10 @@ async fn rocket() -> _ {
     config.address = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
     config.port = 9091;
 
-    let s3_url = std::env::var("S3_URL").expect("S3_URL is not set");
+    let s3_url = std::env::var("S3_URL").expect("S3_URL is set");
     let sandbox = Sandbox::new(s3_url).unwrap();
 
-    let db_url = std::env::var("DB_URL").expect("DB_URL is not set");
+    let db_url = std::env::var("DB_URL").expect("DB_URL is set");
     let auth = Authenticator::new(db_url).await.unwrap();
 
     rocket::build()
