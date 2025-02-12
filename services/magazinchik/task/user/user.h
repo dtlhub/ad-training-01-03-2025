@@ -20,7 +20,7 @@ namespace user{
     bool add_user(char* username , char* password);
     bool checkUser(char* username , char* password);
 
-    User find_user_by_session(std::string& session);
+    User find_user_by_session(std::string& session_token);
 }
 
 #endif //MAGAZINCHIK_USER_H

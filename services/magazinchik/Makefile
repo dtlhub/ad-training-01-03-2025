@@ -2,7 +2,7 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -m64 -fpermissive -g
 
-SOURCES = magazinchik.cpp framework/router/router.cpp framework/template/template.cpp framework/server.cpp framework/parser/parser.cpp task/user/user.cpp task/authorization/auth.cpp
+SOURCES = magazinchik.cpp framework/router/router.cpp framework/template/template.cpp framework/server.cpp framework/parser/parser.cpp task/user/user.cpp task/authorization/auth.cpp task/orders/orders.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 
 EXEC = magazinchik
