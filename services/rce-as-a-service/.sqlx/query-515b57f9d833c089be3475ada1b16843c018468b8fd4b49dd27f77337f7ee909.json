@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM users WHERE created_at < NOW() - ($1 || ' minutes')::interval RETURNING username",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "username",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "515b57f9d833c089be3475ada1b16843c018468b8fd4b49dd27f77337f7ee909"
+}
