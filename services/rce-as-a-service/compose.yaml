@@ -39,7 +39,7 @@ services:
           memory: 512M
 
   db:
-    image: postgres:16
+    image: postgres:17-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
