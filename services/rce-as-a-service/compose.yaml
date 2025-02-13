@@ -10,6 +10,9 @@ services:
       DB_URL: postgres://postgres:postgres@db:5432/raas
       USER_LIFETIME_MINS: 20
       CLEANER_INTERVAL_MINS: 1
+      SECRET_KEY_PATH: /secret/secret_key
+    volumes:
+      - secret:/secret
     depends_on:
       - db
       - s3
@@ -64,3 +67,4 @@ services:
 volumes:
   s3_data:
   db_data:
+  secret:
