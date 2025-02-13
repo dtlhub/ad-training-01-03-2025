@@ -1,4 +1,24 @@
 services:
+  raas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 9091:9091
+    environment:
+      S3_URL: http://s3:8333
+      DB_URL: postgres://postgres:postgres@db:5432/raas
+      USER_LIFETIME_MINS: 20
+      CLEANER_INTERVAL_MINS: 1
+    depends_on:
+      - db
+      - s3
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+
   s3:
     build:
       context: ./s3
@@ -12,6 +32,11 @@ services:
       timeout: 5s
       retries: 3
       start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
 
   db:
     image: postgres:16
@@ -30,6 +55,11 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
 
 volumes:
   s3_data:
