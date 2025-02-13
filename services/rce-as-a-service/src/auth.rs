@@ -1,14 +1,9 @@
+use crate::misc::Result;
+use sqlx::postgres::{PgPool, PgPoolOptions};
 use std::time::Duration;
 
-use sqlx::postgres::{PgPool, PgPoolOptions};
-
-use crate::misc::Result;
 pub struct Authenticator {
     pub pool: PgPool,
-}
-
-struct User {
-    password: String,
 }
 
 impl Authenticator {
@@ -26,16 +21,13 @@ impl Authenticator {
     pub async fn authenticate(&self, username: &str, password: &str) -> Result<bool> {
         let mut tx = self.pool.begin().await?;
 
-        let user = sqlx::query_as!(
-            User,
-            "SELECT password FROM users WHERE username = $1",
-            username
-        )
-        .fetch_optional(&mut *tx)
-        .await?;
+        let current_password =
+            sqlx::query_scalar!("SELECT password FROM users WHERE username = $1", username)
+                .fetch_optional(&mut *tx)
+                .await?;
 
-        match user {
-            Some(user) => Ok(user.password.eq(password)),
+        match current_password {
+            Some(value) => Ok(value.eq(password)),
             None => {
                 sqlx::query!(
                     "INSERT INTO users (username, password) VALUES ($1, $2)",
@@ -52,14 +44,21 @@ impl Authenticator {
     }
 
     pub async fn exists(&self, username: &str) -> Result<bool> {
-        let user = sqlx::query_as!(
-            User,
-            "SELECT password FROM users WHERE username = $1",
-            username
-        )
-        .fetch_optional(&self.pool)
-        .await?;
+        let user = sqlx::query_scalar!("SELECT username FROM users WHERE username = $1", username)
+            .fetch_optional(&self.pool)
+            .await?;
 
         Ok(user.is_some())
+    }
+
+    pub async fn remove_old_users(&self, minutes: u64) -> Result<Vec<String>> {
+        let users = sqlx::query_scalar!(
+            "DELETE FROM users WHERE created_at < NOW() - ($1 || ' minutes')::interval RETURNING username",
+            minutes.to_string()
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(users)
     }
 }

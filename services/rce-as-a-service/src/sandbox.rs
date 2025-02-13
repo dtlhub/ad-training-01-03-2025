@@ -1,13 +1,12 @@
+use crate::misc::Result;
 use crate::storage::Storage;
-
 use serde::Serialize;
 use std::path::PathBuf;
+use std::sync::Arc;
 use wasmtime::component::{Component, Linker, ResourceTable};
 use wasmtime::{Engine, Store};
 use wasmtime_wasi::bindings::Command;
 use wasmtime_wasi::{DirPerms, FilePerms, WasiCtx, WasiCtxBuilder, WasiView};
-
-use crate::misc::Result;
 
 pub struct ComponentRunStates {
     pub wasi_ctx: WasiCtx,
@@ -34,11 +33,11 @@ pub struct ExecutionResult {
 pub struct Sandbox {
     engine: Engine,
     linker: Linker<ComponentRunStates>,
-    storage: Storage,
+    storage: Arc<Storage>,
 }
 
 impl Sandbox {
-    pub fn new(s3_url: String) -> Result<Self> {
+    pub fn new(storage: Arc<Storage>) -> Result<Self> {
         let mut config = wasmtime::Config::new();
         config.async_support(true);
 
@@ -49,7 +48,7 @@ impl Sandbox {
         Ok(Self {
             engine,
             linker,
-            storage: Storage::new(s3_url),
+            storage,
         })
     }
 

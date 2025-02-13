@@ -1,8 +1,7 @@
-use std::path::PathBuf;
-
 use rocket::data::ToByteUnit;
 use s3::creds::Credentials;
 use s3::{Bucket, BucketConfiguration, Region};
+use std::path::PathBuf;
 use tmpdir::TmpDir;
 use tokio::io::{AsyncReadExt, BufReader};
 
@@ -28,11 +27,8 @@ impl Storage {
     }
 
     pub async fn setup_user_directory(&self, user: &String) -> Result<Directory> {
-        println!("Setting up user directory for {}", user);
         let mut bucket = Bucket::new(user, self.region.clone(), self.credentials.clone())?;
-        println!("Bucket new called");
         if !bucket.exists().await? {
-            println!("Bucket does not exist, creating it");
             bucket = Bucket::create_with_path_style(
                 user,
                 self.region.clone(),
@@ -41,13 +37,20 @@ impl Storage {
             )
             .await?
             .bucket;
-            println!("Bucket created");
         }
 
         let file_limit = 10;
         let bytes_limit = 10.mebibytes().as_u64();
 
         Ok(Directory::new(user, bucket, file_limit, bytes_limit).await?)
+    }
+
+    pub async fn delete_user(&self, user: &String) -> Result<()> {
+        let bucket = Bucket::new(user, self.region.clone(), self.credentials.clone())?;
+        if bucket.exists().await? {
+            bucket.delete().await?;
+        }
+        Ok(())
     }
 }
 
@@ -71,9 +74,7 @@ impl Directory {
             bytes_quota,
             files_quota,
         };
-        println!("Instance created");
         instance.move_from_s3_to_local().await?;
-        println!("Moved from s3 to local");
         Ok(instance)
     }
 
@@ -88,12 +89,10 @@ impl Directory {
     }
 
     async fn move_from_s3_to_local(&self) -> Result<()> {
-        println!("Moving from s3 to local");
         let list_bucket_results = self
             .bucket
             .list("/".to_string(), Some("/".to_string()))
             .await?;
-        println!("Listed bucket");
 
         let mut files_left = self.files_quota;
         let mut bytes_left = self.bytes_quota;
@@ -104,18 +103,15 @@ impl Directory {
                 }
 
                 let filename = content.key.as_str().split("/").last().unwrap();
-                println!("Filename: {}", filename);
                 let mut file = tokio::fs::File::create(self.path().join(filename)).await?;
                 self.bucket
                     .get_object_range_to_writer(filename, 0, Some(content.size), &mut file)
                     .await?;
-                println!("Got object range to writer");
 
                 files_left -= 1;
                 bytes_left -= content.size;
 
                 self.bucket.delete_object(filename).await?;
-                println!("Deleted object");
             }
         }
 
