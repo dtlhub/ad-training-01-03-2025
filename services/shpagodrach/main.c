@@ -1,6 +1,3 @@
-// просто добавить функции которые можно будет не зависимо друг от друга вызывать и если вызвать их в нужном порядке то будет шелл
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,10 +6,86 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <pthread.h>
+#include <sys/inotify.h>
+#include <openssl/sha.h>
+#include "vtable_lib.h"
 
 #define GLADIATORS_DIR "/tmp/gladiators/"
+#define BANANA_FILE "banana.jpg"
+#define BANANA_EXPECTED_HASH "2baac52a877358ae99b8dbcdbd362ef6db982e21365e83cafa52255a672fe5e8"
 
-#include "vtable_lib.h"
+void* monitor_banana(void* arg);
+
+int verify_banana() {
+    FILE *fp = fopen(BANANA_FILE, "rb");
+    if (!fp) {
+        return -1;
+    }
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256_CTX sha256;
+    if (SHA256_Init(&sha256) == 0) {
+         fclose(fp);
+         return -1;
+    }
+    const int bufSize = 32768;
+    unsigned char *buffer = malloc(bufSize);
+    if (!buffer) {
+         fclose(fp);
+         return -1;
+    }
+    int bytesRead = 0;
+    while ((bytesRead = fread(buffer, 1, bufSize, fp)) > 0) {
+         SHA256_Update(&sha256, buffer, bytesRead);
+    }
+    SHA256_Final(hash, &sha256);
+    fclose(fp);
+    free(buffer);
+    char outputBuffer[65];
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+         sprintf(outputBuffer + (i * 2), "%02x", hash[i]);
+    }
+    outputBuffer[64] = '\0';
+    if (strcmp(outputBuffer, BANANA_EXPECTED_HASH) != 0) {
+         fprintf(stderr, "Error: %s failed integrity check.\n", BANANA_FILE);
+         return -1;
+    }
+    return 0;
+}
+
+void* monitor_banana(void* arg) {
+    int fd = inotify_init();
+    if (fd < 0) {
+         perror("inotify_init");
+         exit(1);
+    }
+    int wd = inotify_add_watch(fd, ".", IN_DELETE | IN_MOVED_FROM);
+    if (wd < 0) {
+         perror("inotify_add_watch");
+         exit(1);
+    }
+    char buf[4096] __attribute__((aligned(8)));
+    while (1) {
+         int length = read(fd, buf, sizeof(buf));
+         if (length < 0) {
+             perror("read");
+             continue;
+         }
+         int i = 0;
+         while (i < length) {
+             struct inotify_event *event = (struct inotify_event *) &buf[i];
+             if (event->len > 0) {
+                 if (strcmp(event->name, BANANA_FILE) == 0) {
+                     if (event->mask & (IN_DELETE | IN_MOVED_FROM)) {
+                         exit(1);
+                     }
+                 }
+             }
+             i += sizeof(struct inotify_event) + event->len;
+         }
+    }
+    return NULL;
+}
 
 char current_filename[256] = {0};
 
@@ -23,15 +96,15 @@ void createGladiator() {
 
     printf("Enter name (login): ");
     fgets(name, sizeof(name), stdin);
-    name[strcspn(name, "\n")] = 0;
+    name[strcspn(name, "\n")] = '\0';
 
     printf("Enter password: ");
     fgets(pwd, sizeof(pwd), stdin);
-    pwd[strcspn(pwd, "\n")] = 0;
+    pwd[strcspn(pwd, "\n")] = '\0';
 
     printf("Enter comment: ");
     fgets(comment, sizeof(comment), stdin);
-    comment[strcspn(comment, "\n")] = 0;
+    comment[strcspn(comment, "\n")] = '\0';
 
     srand(time(NULL));
     int id = rand();
@@ -62,11 +135,11 @@ int loginGladiator() {
 
     printf("Enter name (login): ");
     fgets(name, sizeof(name), stdin);
-    name[strcspn(name, "\n")] = 0;
+    name[strcspn(name, "\n")] = '\0';
 
     printf("Enter password: ");
     fgets(pwd, sizeof(pwd), stdin);
-    pwd[strcspn(pwd, "\n")] = 0;
+    pwd[strcspn(pwd, "\n")] = '\0';
 
     DIR *d = opendir(GLADIATORS_DIR);
     if (!d) {
@@ -132,7 +205,16 @@ void updateCurrentGladiator() {
     char *base = (char *)&current;
     char *dest = base + 40 * (idx - 1);
     
-    read(0, dest, 40);
+    int bytes_read = read(0, dest, 40);
+    if (bytes_read > 0) {
+        // Удаляем символ перевода строки, если он присутствует
+        for (int i = 0; i < bytes_read; i++) {
+            if (dest[i] == '\n') {
+                dest[i] = '\0';
+                break;
+            }
+        }
+    }
 
     printf("Parameter #%d updated (offset %ld).\n", idx, (long)(dest - base));
 
@@ -149,7 +231,6 @@ void updateCurrentGladiator() {
     fclose(fp);
     printf("Changes saved to file: %s\n", current_filename);
 }
-
 
 void showCurrentGladiator() {
     if (current.name[0] == '\0') {
@@ -222,7 +303,7 @@ void fight() {
     } else {
         printf("Winner -> %s\n", current.name);
         printf("You won!\n");
-        printf("%s\n", current.comment);
+        printf(current.comment);
     }
 }
 
@@ -238,6 +319,16 @@ void banner() {
 }
 
 int main() {
+    if (verify_banana() != 0) {
+        exit(1);
+    }
+
+    pthread_t tid;
+    if (pthread_create(&tid, NULL, monitor_banana, NULL) != 0) {
+        perror("pthread_create");
+        exit(1);
+    }
+
     mkdir(GLADIATORS_DIR, 0755);
 
     banner();
@@ -281,7 +372,7 @@ int main() {
                 break;
             case 6:
                 printf("Goodbye!\n");
-                return 0;
+                exit(0);
             default:
                 printf("Invalid menu option.\n");
                 break;

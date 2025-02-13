@@ -16,6 +16,14 @@ struct Gladiator {
     GladiatorVTable *vtable;
 };
 
+typedef struct {
+    Gladiator current;
+} GlobalData;
+
+extern GlobalData globals __attribute__((section(".current_data")));
+
+#define current (globals.current)
+
 void defaultAttack(Gladiator *g);
 void StrongAttack(Gladiator *g);
 void ArrowAttack(Gladiator *g);
@@ -49,9 +57,5 @@ void BattleCry(Gladiator *g);
 void hello_world(void);
 
 extern GladiatorVTable default_vtable;
-
-extern Gladiator current;
-extern char current_padding[0x90];
-extern void *hello_ptr;
 
 #endif

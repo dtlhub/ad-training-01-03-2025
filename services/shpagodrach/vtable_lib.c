@@ -1,4 +1,10 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "vtable_lib.h"
+#include <unistd.h>
+
+// Определяем глобальные данные – переменная будет размещена в секции ".current_data"
+GlobalData globals __attribute__((section(".current_data"))) = {0};
 
 void defaultAttack(Gladiator *g) {
     printf("%s делает выпад мечом !\n", g->name);
@@ -124,17 +130,3 @@ void StrongAttack(Gladiator *g) {
 GladiatorVTable default_vtable = {
     .attack = defaultAttack
 };
-
-__attribute__((section(".bss.current")))
-Gladiator current;
-
-__attribute__((section(".bss.current")))
-char current_padding[0x90];
-
-__attribute__((section(".bss.current")))
-void *hello_ptr;
-
-__attribute__((constructor))
-static void init_hello_ptr(void) {
-    hello_ptr = (void *)hello_world;
-}
