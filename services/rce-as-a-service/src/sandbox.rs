@@ -1,5 +1,6 @@
 use crate::storage::Storage;
 
+use serde::Serialize;
 use std::path::PathBuf;
 use wasmtime::component::{Component, Linker, ResourceTable};
 use wasmtime::{Engine, Store};
@@ -23,7 +24,12 @@ impl WasiView for ComponentRunStates {
     }
 }
 
-pub struct ExecutionResult {}
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct ExecutionResult {
+    pub stdout: String,
+    pub stderr: String,
+}
 
 pub struct Sandbox {
     engine: Engine,
@@ -83,12 +89,20 @@ impl Sandbox {
         };
         let mut store = Store::new(&self.engine, state);
 
+        // store.set_epoch_deadline(ticks_beyond_current);
+        // let limiter = Limiter::new(1000, 1000);
+        // store.limiter_async(limiter);
+        // store.set_fuel(fuel)
+
         let component = Component::from_binary(&self.engine, &wasm)?;
         let command = Command::instantiate_async(&mut store, &component, &self.linker).await?;
 
         let res = command.wasi_cli_run().call_run(&mut store).await?;
         match res {
-            Ok(()) => Ok(ExecutionResult {}),
+            Ok(()) => Ok(ExecutionResult {
+                stdout: String::new(),
+                stderr: String::new(),
+            }),
             Err(()) => Err("execution failed".into()),
         }
     }
