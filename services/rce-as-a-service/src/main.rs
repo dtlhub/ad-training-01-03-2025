@@ -143,14 +143,14 @@ async fn launch_cleaner(auth: Arc<Authenticator>, storage: Arc<Storage>) {
         .parse::<u64>()
         .expect("USER_LIFETIME_MINS is set to a valid integer");
 
-    let cleaner = Cleaner::new(auth.clone(), storage.clone(), cleaner_interval)
+    let cleaner = Cleaner::new(auth.clone(), storage.clone(), user_lifetime)
         .await
         .unwrap();
     tokio::spawn(async move {
         loop {
             cleaner.clean().await.unwrap(); // TODO: handle all errors
             tokio::time::sleep(Duration::from_secs(
-                (60 * user_lifetime).try_into().unwrap(),
+                (60 * cleaner_interval).try_into().unwrap(),
             ))
             .await;
         }
