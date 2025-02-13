@@ -135,11 +135,11 @@ async fn get_components() -> (Arc<Storage>, Arc<Authenticator>, Sandbox) {
 
 async fn launch_cleaner(auth: Arc<Authenticator>, storage: Arc<Storage>) {
     let cleaner_interval = std::env::var("CLEANER_INTERVAL_MINS")
-        .unwrap_or("15".to_string())
+        .unwrap_or("1".to_string())
         .parse::<u64>()
         .expect("CLEANER_INTERVAL_MINS is set to a valid integer");
     let user_lifetime = std::env::var("USER_LIFETIME_MINS")
-        .unwrap_or("10".to_string())
+        .unwrap_or("20".to_string())
         .parse::<u64>()
         .expect("USER_LIFETIME_MINS is set to a valid integer");
 
