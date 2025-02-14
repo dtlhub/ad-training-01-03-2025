@@ -18,6 +18,7 @@ namespace auth {
     void generate_token(char *buffer, size_t length);
     const char* login(const char *username);
     int is_authorized(const char *token);
+    std::string find_username_by_session(std::string& token);
 }
 
 #endif //MAGAZINCHIK_AUTH_H

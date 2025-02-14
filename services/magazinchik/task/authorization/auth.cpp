@@ -84,4 +84,34 @@ namespace auth {
         std::cout << "Token not found" << std::endl;
         return 0;
     }
+
+    std::string find_username_by_session(std::string& token) {
+        std::ifstream in(SESSIONS_FILE);
+        if (!in.is_open()) {
+            std::cerr << "Failed to open sessions file for reading." << std::endl;
+            return "";
+        }
+
+        std::string line;
+        while (std::getline(in, line)) {
+            size_t delimiter_pos = line.find(':');
+            if (delimiter_pos == std::string::npos) {
+                continue;
+            }
+
+            std::string file_username = line.substr(0, delimiter_pos);
+            std::string file_token = line.substr(delimiter_pos + 1);
+            file_token.erase(file_token.find_last_not_of("\r\n\0") + 1);
+
+            token.erase(token.find_last_not_of("\r\n\0") + 1);
+
+            if (file_token == token) {
+                in.close();
+                return file_username;
+            }
+        }
+
+        in.close();
+        return "";
+    }
 }

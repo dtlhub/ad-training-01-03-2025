@@ -104,21 +104,18 @@ void handle_index_get(int client_socket, const parser::Request &req){
     bool authorized = auth::is_authorized(session.c_str());
 
     if(authorized){
-        /*
-        user::User u = user::find_user_by_session(session);
+        session[session.size()-1] = '\n';
+        std::string username = auth::find_username_by_session(session);
 
-        std::cout << u.username << ' ' << u.password << ' ' << u.balance << std::endl;
+        user::User u = user::find_user_by_username(username.data());
 
-        std::string username, password;
-
+        username.clear();
         username.assign(u.username);
-        password.assign(u.password);*/
 
         std::unordered_map<std::string, std::string> context = {
                 {"title", "Magazinchik"},
-                {"username", "Uspeh"},
-                {"password", ""},
-                {"balance", ""},
+                {"username", username},
+                {"balance", std::to_string(u.balance)},
         };
 
         std::string template_str = template_engine::load_template("templates/authorized/index.html");
@@ -129,7 +126,6 @@ void handle_index_get(int client_socket, const parser::Request &req){
         std::unordered_map<std::string, std::string> context = {
                 {"title", "Magazinchik"},
                 {"username", ""} ,
-                {"password", ""},
                 {"balance", ""},
         };
         std::string template_str = template_engine::load_template("templates/unauthorized/index.html");
@@ -155,12 +151,22 @@ void handle_order_get(int client_socket, const parser::Request &req){
     bool authorized = auth::is_authorized(session.c_str());
 
     if(authorized) {
+        session[session.size()-1] = '\n';
+        std::string username = auth::find_username_by_session(session);
+
+        user::User u = user::find_user_by_username(username.data());
+
+        username.clear();
+        username.assign(u.username);
+
         std::unordered_map<std::string, std::string> context = {
                 {"title", "Magazinchik"},
+                {"username", username},
+                {"balance", std::to_string(u.balance)},
         };
 
 
-        std::string template_str = template_engine::load_template("templates/order.html");
+        std::string template_str = template_engine::load_template("templates/authorized/order.html");
         std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" +
                                template_engine::render_template(template_str, context);
         send(client_socket, response.c_str(), response.length(), 0);
@@ -190,13 +196,7 @@ void handle_order_post(int client_socket, const parser::Request &req) {
     }
 
     std::string session = it->second;
-
-    user::User u = user::find_user_by_session(session);
-    std::string username;
-    username.assign(u.username);
-
-    std::cout << "Session: " << session << std::endl;
-    std::cout << "User: " << username << std::endl;
+    std::string username = auth::find_username_by_session(session);
 
     if (order::add_order(name.data(), description.data(), username.data(), stoi(price))) {
         std::cout << "Order added successfully!" << std::endl;
@@ -206,7 +206,7 @@ void handle_order_post(int client_socket, const parser::Request &req) {
 
     std::string response = "HTTP/1.1 302 Found\r\n"
                            "Path=/; HttpOnly\r\n"
-                           "Location: /order\r\n"
+                           "Location: /\r\n"
                            "Content-Length: 0\r\n"
                            "\r\n";
     send(client_socket, response.c_str(), response.length(), 0);

@@ -47,70 +47,46 @@ namespace user {
         return false;
     }
 
-    User find_user_by_session(std::string& session_token) {
-        User foundUser = {};
 
-        // Открытие файла с сессиями и поиск по сессии
-        std::ifstream session_file("/tmp/sessions.txt");
-        if (!session_file.is_open()) {
-            std::cerr << "[ERROR] Couldn't open session file" << std::endl;
-            return foundUser;
+    User find_user_by_username(char* username) {
+        User u = {};
+
+        std::ifstream in(USER_FILE);
+        if (!in.is_open()) {
+            std::cerr << "[ERROR] Couldn't open user file for reading" << std::endl;
+            return u;
         }
 
         std::string line;
-        std::string username;
-        bool session_found = false;
+        while (std::getline(in, line)) {
+            char fileUsername[32] = {};
+            char filePassword[32] = {};
+            int balance = 0;
 
-        // Поиск в файле сессий
-        while (std::getline(session_file, line)) {
-            size_t delimiter_pos = line.find(':');
-            if (delimiter_pos == std::string::npos) {
-                continue;
-            }
+            int parsed = sscanf(line.c_str(), "%31[^:]:%31[^:]:%d", fileUsername, filePassword, &balance);
+            if (parsed == 3) {
+                std::string fileUsernameStr = fileUsername;
+                fileUsernameStr.erase(fileUsernameStr.find_last_not_of("\r\n ") + 1);
 
-            std::string file_username = line.substr(0, delimiter_pos);
-            std::string file_token = line.substr(delimiter_pos + 1);
+                std::string usernameStr = username;
 
-            if (file_token == session_token) {
-                username = file_username;
-                session_found = true;
-                break;
-            }
-        }
+                if (fileUsername == usernameStr) {
+                    strncpy(u.username, fileUsername, sizeof(u.username) - 1);
+                    u.username[sizeof(u.username) - 1] = '\0';
 
-        session_file.close();
+                    strncpy(u.password, filePassword, sizeof(u.password) - 1);
+                    u.password[sizeof(u.password) - 1] = '\0';
 
-        if (!session_found) {
-            std::cerr << "[ERROR] Session not found" << std::endl;
-            return foundUser;
-        }
-
-        // Если сессия найдена, ищем пользователя в файле с пользователями
-        std::ifstream user_file(USER_FILE);
-        if (!user_file.is_open()) {
-            std::cerr << "[ERROR] Couldn't open user file" << std::endl;
-            return foundUser;
-        }
-
-        while (std::getline(user_file, line)) {
-            char fileUsername[32], filePassword[32];
-            int balance;
-
-            // Разбираем строку из файла пользователя
-            if (sscanf(line.c_str(), "%31[^:]:%31[^:]:%d", fileUsername, filePassword, &balance) == 3) {
-                if (strcmp(fileUsername, username.c_str()) == 0) {
-                    // Заполняем структуру пользователя
-                    strncpy(foundUser.username, fileUsername, sizeof(foundUser.username) - 1);
-                    strncpy(foundUser.password, filePassword, sizeof(foundUser.password) - 1);
-                    foundUser.balance = balance;
-                    break;
+                    u.balance = balance;
+                    in.close();
+                    return u;
                 }
+            } else {
+                std::cerr << "[ERROR] Failed to parse line: " << line << std::endl;
             }
         }
 
-        user_file.close();
-        return foundUser;
+        in.close();
+        return u;
     }
-
-
 }
