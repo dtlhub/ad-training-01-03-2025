@@ -207,7 +207,6 @@ void updateCurrentGladiator() {
     
     int bytes_read = read(0, dest, 40);
     if (bytes_read > 0) {
-        // Удаляем символ перевода строки, если он присутствует
         for (int i = 0; i < bytes_read; i++) {
             if (dest[i] == '\n') {
                 dest[i] = '\0';
@@ -216,7 +215,6 @@ void updateCurrentGladiator() {
         }
     }
 
-    printf("Parameter #%d updated (offset %ld).\n", idx, (long)(dest - base));
 
     if (current_filename[0] == '\0') {
         printf("Error: no file information available for saving changes.\n");
@@ -229,7 +227,6 @@ void updateCurrentGladiator() {
     }
     fwrite(&current, sizeof(current), 1, fp);
     fclose(fp);
-    printf("Changes saved to file: %s\n", current_filename);
 }
 
 void showCurrentGladiator() {
