@@ -111,6 +111,7 @@ impl Directory {
                 files_left -= 1;
                 bytes_left -= content.size;
 
+                // TODO: don't delete in case of failure of running the script?
                 self.bucket.delete_object(filename).await?;
             }
         }
