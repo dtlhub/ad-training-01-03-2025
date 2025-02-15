@@ -72,4 +72,92 @@ namespace order{
         return false;
     }
 
+
+    std::vector<std::unordered_map<std::string, std::string> > file_to_vec() {
+        std::vector<std::unordered_map<std::string, std::string> > orders;
+        std::ifstream in(ORDERS_FILE);
+
+        if (!in.is_open()) {
+            std::cerr << "[ERROR] Couldn't open file for reading" << std::endl;
+            return orders;
+        }
+
+        std::string line;
+        while (std::getline(in, line)) {
+            std::unordered_map<std::string, std::string> order;
+            size_t pos = 0;
+            std::vector<std::string> keys = {"name", "description", "author", "price"};
+            int key_index = 0;
+
+            while ((pos = line.find(':')) != std::string::npos && key_index < keys.size()) {
+                order[keys[key_index++]] = line.substr(0, pos);
+                line.erase(0, pos + 1);
+            }
+
+            if (key_index < keys.size()) {
+                order[keys[key_index]] = line;
+            }
+
+            orders.push_back(order);
+        }
+
+        in.close();
+        return orders;
+    }
+
+    bool has_bought_order(const std::string& username, const std::string& order_name) {
+        std::ifstream bought_in(BOUGHT_ORDERS);
+        if (!bought_in.is_open()) {
+            std::cerr << "[ERROR] Couldn't open bought orders file for reading" << std::endl;
+            return false;
+        }
+
+        std::string line;
+        while (std::getline(bought_in, line)) {
+            size_t pos = line.find(":");
+            if (pos != std::string::npos) {
+                std::string buyer = line.substr(0, pos);
+                std::string bought_order = line.substr(pos + 1);
+                if (buyer == username && bought_order == order_name) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    std::vector<std::unordered_map<std::string, std::string> > my_orders(std::string& username) {
+        std::vector<std::unordered_map<std::string, std::string> > orders;
+        std::ifstream in(ORDERS_FILE);
+
+        if (!in.is_open()) {
+            std::cerr << "[ERROR] Couldn't open file for reading" << std::endl;
+            return orders;
+        }
+
+        std::string line;
+        while (std::getline(in, line)) {
+            std::unordered_map<std::string, std::string> order;
+            size_t pos = 0;
+            std::vector<std::string> keys = {"name", "description", "author", "price"};
+            int key_index = 0;
+
+            while ((pos = line.find(':')) != std::string::npos && key_index < keys.size()) {
+                order[keys[key_index++]] = line.substr(0, pos);
+                line.erase(0, pos + 1);
+            }
+
+            if (key_index < keys.size()) {
+                order[keys[key_index]] = line;
+            }
+
+            if (order["author"] == username || has_bought_order(username, order["name"])) {
+                orders.push_back(order);
+            }
+        }
+
+        in.close();
+        return orders;
+    }
+
 }

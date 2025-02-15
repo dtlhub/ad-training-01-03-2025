@@ -119,8 +119,7 @@ void handle_index_get(int client_socket, const parser::Request &req){
         };
 
         std::unordered_map<std::string, std::vector<std::unordered_map<std::string, std::string>>> list_context = {
-                {"orders", { {{"name", "kot"}, {"price", "200"}},
-                            {{"name", "pes"}, {"price", "250"}} }}
+                {"orders", order::file_to_vec()},
         };
 
         std::string template_str = template_engine::load_template("templates/authorized/index.html");
@@ -218,6 +217,55 @@ void handle_order_post(int client_socket, const parser::Request &req) {
 }
 
 
+void handle_my_order_get(int client_socket, const parser::Request &req){
+    std::unordered_map<std::string, std::string> params = parser::parse_post_body(req.body);
+
+    auto it = req.cookies.find("session");
+    if (it == req.cookies.end()) {
+        std::cerr << "Session cookie not found!" << std::endl;
+        return;
+    }
+
+    std::string session = it->second;
+    session[session.size()-1] = '\0';
+
+    bool authorized = auth::is_authorized(session.c_str());
+
+    if(authorized) {
+        session[session.size()-1] = '\n';
+        std::string username = auth::find_username_by_session(session);
+
+        user::User u = user::find_user_by_username(username.data());
+
+        username.clear();
+        username.assign(u.username);
+
+        std::unordered_map<std::string, std::string> context = {
+                {"title", "Magazinchik"},
+                {"username", username},
+                {"balance", std::to_string(u.balance)},
+        };
+
+        std::unordered_map<std::string, std::vector<std::unordered_map<std::string, std::string>>> list_context = {
+                {"orders", order::my_orders(username)},
+        };
+
+
+        std::string template_str = template_engine::load_template("templates/authorized/my_order.html");
+        std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" +
+                               template_engine::render_template(template_str, context,list_context);
+        send(client_socket, response.c_str(), response.length(), 0);
+    }else{
+        std::unordered_map<std::string, std::string> context = {
+                {"title", "Magazinchik"},
+        };
+        std::string template_str = template_engine::load_template("templates/login_required.html");
+        std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" +
+                               template_engine::render_template(template_str,context);
+        send(client_socket, response.c_str(), response.length(), 0);
+    }
+}
+
 int main() {
     // registration
     router::add_route("GET","/register" , handle_register_get);
@@ -230,6 +278,7 @@ int main() {
     //order
     router::add_route("GET" , "/order" , handle_order_get);
     router::add_route("POST" , "/order" , handle_order_post);
+    router::add_route("GET" , "/my_order" , handle_my_order_get);
 
     //main page
     router::add_route("GET" , "/" , handle_index_get);
