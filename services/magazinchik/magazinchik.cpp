@@ -118,9 +118,14 @@ void handle_index_get(int client_socket, const parser::Request &req){
                 {"balance", std::to_string(u.balance)},
         };
 
+        std::unordered_map<std::string, std::vector<std::unordered_map<std::string, std::string>>> list_context = {
+                {"orders", { {{"name", "kot"}, {"price", "200"}},
+                            {{"name", "pes"}, {"price", "250"}} }}
+        };
+
         std::string template_str = template_engine::load_template("templates/authorized/index.html");
         std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" +
-                               template_engine::render_template(template_str, context);
+                               template_engine::render_template(template_str,context, list_context);
         send(client_socket, response.c_str(), response.length(), 0);
     }else{
         std::unordered_map<std::string, std::string> context = {
