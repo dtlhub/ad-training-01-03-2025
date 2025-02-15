@@ -293,14 +293,21 @@ void fight() {
     else
         printf("[Error] vtable not initialized!\n");
 
-    int res = rand() % 2;
-    if (res == 0) {
+    char enemcomm[40];
+    char mycomm[40];
+
+    strncpy(enemcomm, enemy.comment, 40);
+    strncpy(mycomm, current.comment, 40);
+    
+    int res = rand() % 1000000;
+    if (res != 0) {
         printf("Winner -> %s\n", enemy.name);
         printf("You lost!\n");
+        printf(mycomm);
     } else {
         printf("Winner -> %s\n", current.name);
         printf("You won!\n");
-        printf(current.comment);
+        printf(enemcomm);
     }
 }
 
