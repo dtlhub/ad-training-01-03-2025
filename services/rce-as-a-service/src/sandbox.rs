@@ -82,7 +82,9 @@ impl Sandbox {
         let mut dir = self.storage.setup_user_directory(user).await?;
 
         let run_wasm = self.run_wasm(wasm, args, dir.path()).await;
+
         let close_dir = dir.close().await;
+
         match (run_wasm, close_dir) {
             (Err(e1), _) => Err(e1),
             (Ok(_), Err(e2)) => Err(e2),

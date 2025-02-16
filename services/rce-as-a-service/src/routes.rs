@@ -3,6 +3,7 @@ use crate::sandbox::ExecutionResult;
 use crate::sandbox::Sandbox;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine as _;
+use log::info;
 use rocket::http::{Cookie, CookieJar, Status};
 use rocket::request::{FromRequest, Outcome};
 use rocket::response::status;
@@ -69,6 +70,8 @@ pub async fn execute(
     authenticated_user: AuthenticatedUser,
     sandbox: &State<Sandbox>,
 ) -> std::result::Result<Json<ExecutionResult>, status::BadRequest<String>> {
+    info!("Executing WASM from {}", authenticated_user.0);
+
     let base64_wasm = data.wasm.as_bytes();
     let wasm = BASE64_STANDARD
         .decode(base64_wasm)
@@ -106,6 +109,7 @@ pub async fn login(
         ));
     }
 
+    info!("Authenticated user {}", data.username);
     let cookie = Cookie::new(COOKIE_NAME, data.username.to_string());
     cookies.add_private(cookie);
 

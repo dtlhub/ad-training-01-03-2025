@@ -12,6 +12,7 @@ use cleaner::Cleaner;
 use log::{error, info};
 use rand::TryRngCore;
 use rocket::config::SecretKey;
+use rocket::data::{Limits, ToByteUnit};
 use rocket::{launch, routes};
 use simplelog::{ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
 use std::net::{IpAddr, Ipv4Addr};
@@ -101,6 +102,7 @@ async fn rocket() -> _ {
     config.address = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
     config.port = 9091;
     config.secret_key = get_secret_key();
+    config.limits = Limits::new().limit("json", 3.mebibytes());
 
     let (storage, auth, sandbox) = get_components().await;
 
@@ -113,3 +115,4 @@ async fn rocket() -> _ {
         .configure(config)
         .mount("/api", routes![login, execute])
 }
+

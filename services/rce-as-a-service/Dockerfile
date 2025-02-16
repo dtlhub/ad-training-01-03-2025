@@ -16,7 +16,7 @@ COPY src ./src
 COPY .sqlx ./.sqlx
 RUN cargo build --release --bin rce-as-a-service
 
-FROM debian:bookworm-slim AS runner
+FROM debian:bookworm AS runner
 WORKDIR /app
 RUN apt-get update && apt-get install -y pkg-config libssl-dev
 COPY --from=builder /app/target/release/rce-as-a-service /opt/rce-as-a-service
