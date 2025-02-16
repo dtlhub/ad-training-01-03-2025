@@ -1,24 +1,23 @@
-FROM rust:1.84.1-slim-bookworm as builder
-
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y pkg-config libssl-dev
-
+FROM lukemathwalker/cargo-chef:latest-rust-1.84.1-slim-bookworm AS chef
 WORKDIR /app
-COPY Cargo.toml Cargo.lock ./
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/src/app/target \
-    cargo fetch
+RUN apt-get update && apt-get install -y pkg-config libssl-dev
 
+FROM chef AS planner
+COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 COPY .sqlx ./.sqlx
+RUN cargo chef prepare --recipe-path recipe.json
 
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target \
-    cargo build --release
+FROM chef AS builder
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+COPY .sqlx ./.sqlx
+RUN cargo build --release --bin rce-as-a-service
 
-FROM rust:1.84.1-slim-bookworm
-
+FROM debian:bookworm-slim AS runner
+WORKDIR /app
+RUN apt-get update && apt-get install -y pkg-config libssl-dev
 COPY --from=builder /app/target/release/rce-as-a-service /opt/rce-as-a-service
-
-CMD ["/opt/rce-as-a-service"]
+ENTRYPOINT ["/opt/rce-as-a-service"]

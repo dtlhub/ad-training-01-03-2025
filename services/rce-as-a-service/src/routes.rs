@@ -63,7 +63,7 @@ pub struct ExecutionRequest<'r> {
     args: Vec<String>,
 }
 
-#[post("/execute", format = "plain", data = "<data>")]
+#[post("/execute", format = "json", data = "<data>")]
 pub async fn execute(
     data: Json<ExecutionRequest<'_>>,
     authenticated_user: AuthenticatedUser,

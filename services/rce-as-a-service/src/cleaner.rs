@@ -23,15 +23,17 @@ impl Cleaner {
         })
     }
 
-    pub async fn clean(&self) -> Result<()> {
+    pub async fn clean(&self) -> Result<usize> {
         let users = self.auth.remove_old_users(self.minutes).await?;
 
         let mut handles = Vec::with_capacity(users.len());
         let semaphore = Arc::new(Semaphore::new(10));
 
-        for user in users {
+        for user in users.iter() {
+            let user = user.clone();
             let storage = Arc::clone(&self.storage);
             let semaphore = Arc::clone(&semaphore);
+
             handles.push(tokio::spawn(async move {
                 let _guard = semaphore.acquire().await.unwrap();
                 let _ = storage.delete_user(&user).await;
@@ -43,6 +45,6 @@ impl Cleaner {
         }
         semaphore.close();
 
-        Ok(())
+        Ok(users.len())
     }
 }

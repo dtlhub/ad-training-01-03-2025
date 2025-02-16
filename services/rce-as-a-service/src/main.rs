@@ -9,14 +9,26 @@ use crate::auth::Authenticator;
 use crate::routes::{execute, login};
 use crate::sandbox::Sandbox;
 use cleaner::Cleaner;
+use log::{error, info};
 use rand::TryRngCore;
 use rocket::config::SecretKey;
 use rocket::{launch, routes};
+use simplelog::{ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::Storage;
+
+fn setup_logging() {
+    CombinedLogger::init(vec![TermLogger::new(
+        LevelFilter::Info,
+        Config::default(),
+        TerminalMode::Mixed,
+        ColorChoice::Auto,
+    )])
+    .expect("Logging should be set up");
+}
 
 async fn get_components() -> (Arc<Storage>, Arc<Authenticator>, Sandbox) {
     let s3_url = std::env::var("S3_URL").expect("S3_URL should be set");
@@ -42,13 +54,16 @@ async fn launch_cleaner(auth: Arc<Authenticator>, storage: Arc<Storage>) {
     let cleaner = Cleaner::new(auth.clone(), storage.clone(), user_lifetime)
         .await
         .expect("Cleaner should be initialized");
+
+    let sleep_duration = Duration::from_secs((60 * cleaner_interval).into());
     tokio::spawn(async move {
         loop {
-            tokio::time::sleep(Duration::from_secs(
-                (60 * cleaner_interval).try_into().unwrap(),
-            ))
-            .await;
-            cleaner.clean().await.unwrap(); // TODO: handle all errors
+            tokio::time::sleep(sleep_duration).await;
+            info!("Cleaning up expired users");
+            match cleaner.clean().await {
+                Ok(count) => info!("Successfully cleaned up {count} users"),
+                Err(e) => error!("Error cleaning up expired users: {e}"),
+            }
         }
     });
 }
@@ -80,6 +95,8 @@ fn get_secret_key() -> SecretKey {
 
 #[launch]
 async fn rocket() -> _ {
+    setup_logging();
+
     let mut config = rocket::Config::default();
     config.address = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
     config.port = 9091;
@@ -89,6 +106,7 @@ async fn rocket() -> _ {
 
     launch_cleaner(auth.clone(), storage.clone()).await;
 
+    info!("Starting server at {}:{}", config.address, config.port);
     rocket::build()
         .manage(sandbox)
         .manage(auth)

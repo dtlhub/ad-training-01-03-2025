@@ -26,7 +26,7 @@ impl Storage {
         }
     }
 
-    pub async fn setup_user_directory(&self, user: &String) -> Result<Directory> {
+    pub async fn setup_user_directory(&self, user: &str) -> Result<Directory> {
         let mut bucket = Bucket::new(user, self.region.clone(), self.credentials.clone())?;
         if !bucket.exists().await? {
             bucket = Bucket::create_with_path_style(
@@ -45,7 +45,7 @@ impl Storage {
         Ok(Directory::new(user, bucket, file_limit, bytes_limit).await?)
     }
 
-    pub async fn delete_user(&self, user: &String) -> Result<()> {
+    pub async fn delete_user(&self, user: &str) -> Result<()> {
         let bucket = Bucket::new(user, self.region.clone(), self.credentials.clone())?;
         if bucket.exists().await? {
             bucket.delete().await?;
@@ -63,7 +63,7 @@ pub struct Directory {
 
 impl Directory {
     pub async fn new(
-        prefix: &String,
+        prefix: &str,
         bucket: Box<Bucket>,
         files_quota: u64,
         bytes_quota: u64,
