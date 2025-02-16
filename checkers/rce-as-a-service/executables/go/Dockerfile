@@ -8,9 +8,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Go
-RUN wget https://go.dev/dl/go1.21.6.linux-amd64.tar.gz \
-    && tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz \
-    && rm go1.21.6.linux-amd64.tar.gz
+RUN wget https://go.dev/dl/go1.23.5.linux-amd64.tar.gz \
+    && tar -C /usr/local -xzf go1.23.5.linux-amd64.tar.gz \
+    && rm go1.23.5.linux-amd64.tar.gz
+
+# Install wasm-tools
+RUN wget https://github.com/bytecodealliance/wasm-tools/releases/download/v1.225.0/wasm-tools-1.225.0-x86_64-linux.tar.gz \
+    && tar -xzf wasm-tools-1.225.0-x86_64-linux.tar.gz \
+    && mv wasm-tools-1.225.0-x86_64-linux/wasm-tools /usr/local/bin/ \
+    && rm -rf wasm-tools-1.225.0-x86_64-linux.tar.gz wasm-tools-1.225.0-x86_64-linux
 
 ENV PATH="/usr/local/go/bin:${PATH}"
 
@@ -23,4 +29,5 @@ WORKDIR /build
 
 ENV GOOS=wasip2
 ENV GOARCH=wasm
-ENTRYPOINT ["tinygo", "build", "-o", "/out/output.wasm"]
+
+ENTRYPOINT ["tinygo", "build", "-target", "wasip2", "-o", "/out/output.wasm"]

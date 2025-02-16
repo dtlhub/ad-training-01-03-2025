@@ -5,15 +5,11 @@ fn decodeBase64(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
     errdefer output.deinit();
 
     var buf: u32 = 0;
-    var bits: u8 = 0;
+    var bits: u5 = 0;  // Changed to u5 as it's sufficient for our needs (0-31)
     var padding: u8 = 0;
 
     for (input) |c| {
         if (c == '=') {
-            if (bits >= 8) {
-                bits = @intCast(bits - 8);
-                try output.append(@truncate((buf >> @intCast(bits)) & 0xFF));
-            }
             padding += 1;
             continue;
         }
@@ -28,17 +24,21 @@ fn decodeBase64(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
         };
 
         buf = (buf << 6) | val;
-        bits = @intCast(bits + 6);
+        bits = @truncate(bits + 6);
 
-        while (bits >= 8) {
-            bits = @intCast(bits - 8);
-            try output.append(@truncate((buf >> @intCast(bits)) & 0xFF));
+        if (bits >= 8) {
+            bits = @truncate(bits - 8);
+            try output.append(@truncate((buf >> @as(u5, bits)) & 0xFF));
         }
     }
 
-    // Handle remaining bits if we have any
-    if (bits > 0 and padding < 2) {
-        try output.append(@truncate((buf << @intCast(8 - bits)) & 0xFF));
+    // Handle remaining bits based on padding
+    if (padding == 1 and bits >= 2) {
+        bits = @truncate(bits - 2);
+        try output.append(@truncate((buf >> @as(u5, bits)) & 0xFF));
+    } else if (padding == 2 and bits >= 4) {
+        bits = @truncate(bits - 4);
+        try output.append(@truncate((buf >> @as(u5, bits)) & 0xFF));
     }
 
     return output.toOwnedSlice();

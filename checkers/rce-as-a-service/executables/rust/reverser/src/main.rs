@@ -2,22 +2,12 @@ use std::env;
 
 fn decode_base64(input: &str) -> Result<Vec<u8>, String> {
     let mut output = Vec::new();
-    let mut buf = 0u32;
-    let mut bits = 0u32;
+    let mut buf: u32 = 0;
+    let mut bits: u32 = 0;
     let mut padding = 0;
 
-    let chars: Vec<char> = input.chars().collect();
-    let mut i = 0;
-    while i < chars.len() {
-        let c = chars[i];
-        i += 1;
-
-        // Handle padding
+    for c in input.chars() {
         if c == '=' {
-            if bits >= 8 {
-                bits -= 8;
-                output.push((buf >> bits) as u8);
-            }
             padding += 1;
             continue;
         }
@@ -40,9 +30,13 @@ fn decode_base64(input: &str) -> Result<Vec<u8>, String> {
         }
     }
 
-    // Handle remaining bits if we have any
-    if bits > 0 && padding < 2 {
-        output.push((buf << (8 - bits)) as u8);
+    // Handle remaining bits based on padding
+    if padding == 1 && bits >= 2 {
+        bits -= 2;
+        output.push((buf >> bits) as u8);
+    } else if padding == 2 && bits >= 4 {
+        bits -= 4;
+        output.push((buf >> bits) as u8);
     }
 
     Ok(output)
