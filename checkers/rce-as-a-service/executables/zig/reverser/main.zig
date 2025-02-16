@@ -5,26 +5,40 @@ fn decodeBase64(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
     errdefer output.deinit();
 
     var buf: u32 = 0;
-    var bits: u5 = 0;
+    var bits: u8 = 0;
+    var padding: u8 = 0;
 
     for (input) |c| {
+        if (c == '=') {
+            if (bits >= 8) {
+                bits = @intCast(bits - 8);
+                try output.append(@truncate((buf >> @intCast(bits)) & 0xFF));
+            }
+            padding += 1;
+            continue;
+        }
+
         const val: u32 = switch (c) {
             'A'...'Z' => c - 'A',
             'a'...'z' => c - 'a' + 26,
             '0'...'9' => c - '0' + 52,
             '+' => 62,
             '/' => 63,
-            '=' => break,
             else => continue,
         };
 
         buf = (buf << 6) | val;
-        bits = @truncate((@as(u32, @intCast(bits)) + 6));
+        bits = @intCast(bits + 6);
 
         while (bits >= 8) {
-            bits = @truncate((@as(u32, @intCast(bits)) - 8));
-            try output.append(@truncate((buf >> bits) & 0xFF));
+            bits = @intCast(bits - 8);
+            try output.append(@truncate((buf >> @intCast(bits)) & 0xFF));
         }
+    }
+
+    // Handle remaining bits if we have any
+    if (bits > 0 and padding < 2) {
+        try output.append(@truncate((buf << @intCast(8 - bits)) & 0xFF));
     }
 
     return output.toOwnedSlice();

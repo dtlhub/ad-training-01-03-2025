@@ -17,7 +17,7 @@ if [ -f "build.zig" ]; then
         exit 1
     fi
 else
-    zig build-exe "$1" -target wasm32-wasi -O ReleaseSmall -fstrip -femit-bin=/out/output.wasm
+    zig build-exe "$1" -target wasm32-wasi.0.2.0 -O ReleaseSmall -fstrip -femit-bin=/out/output.wasm
 fi
 status=$?
 

@@ -4,10 +4,10 @@ FROM alpine:3.19
 RUN apk add --no-cache wget xz
 
 # Install Zig
-RUN wget https://ziglang.org/download/0.11.0/zig-linux-x86_64-0.11.0.tar.xz \
-    && tar xf zig-linux-x86_64-0.11.0.tar.xz \
-    && mv zig-linux-x86_64-0.11.0 /usr/local/zig \
-    && rm zig-linux-x86_64-0.11.0.tar.xz
+RUN wget https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz \
+    && tar xf zig-linux-x86_64-0.13.0.tar.xz \
+    && mv zig-linux-x86_64-0.13.0 /usr/local/zig \
+    && rm zig-linux-x86_64-0.13.0.tar.xz
 
 ENV PATH="/usr/local/zig:${PATH}"
 

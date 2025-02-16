@@ -4,15 +4,30 @@ fn decode_base64(input: &str) -> Result<Vec<u8>, String> {
     let mut output = Vec::new();
     let mut buf = 0u32;
     let mut bits = 0u32;
+    let mut padding = 0;
 
-    for c in input.chars() {
+    let chars: Vec<char> = input.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        let c = chars[i];
+        i += 1;
+
+        // Handle padding
+        if c == '=' {
+            if bits >= 8 {
+                bits -= 8;
+                output.push((buf >> bits) as u8);
+            }
+            padding += 1;
+            continue;
+        }
+
         let val = match c {
             'A'..='Z' => c as u32 - 'A' as u32,
             'a'..='z' => c as u32 - 'a' as u32 + 26,
             '0'..='9' => c as u32 - '0' as u32 + 52,
             '+' => 62,
             '/' => 63,
-            '=' => break,
             _ => continue,
         };
 
@@ -23,6 +38,11 @@ fn decode_base64(input: &str) -> Result<Vec<u8>, String> {
             bits -= 8;
             output.push((buf >> bits) as u8);
         }
+    }
+
+    // Handle remaining bits if we have any
+    if bits > 0 && padding < 2 {
+        output.push((buf << (8 - bits)) as u8);
     }
 
     Ok(output)

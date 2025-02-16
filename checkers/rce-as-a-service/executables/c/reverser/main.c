@@ -28,30 +28,63 @@ size_t base64_decode(const char *src, size_t src_len, unsigned char *dst) {
     size_t i = 0, j = 0;
     unsigned char a, b, c, d;
     unsigned char tmp[4];
+    int padding = 0;
 
     while (i < src_len) {
-        if (src[i] == '=') break;
+        // Skip whitespace
         if (src[i] == '\n' || src[i] == '\r' || src[i] == ' ') {
             i++;
             continue;
         }
 
+        // Get first byte
+        if (src[i] == '=' || i >= src_len) break;
         tmp[0] = base64_reverse_table[(unsigned char)src[i++]];
+
+        // Get second byte
         if (i >= src_len) break;
+        if (src[i] == '=') {
+            padding = 2;
+            break;
+        }
         tmp[1] = base64_reverse_table[(unsigned char)src[i++]];
+
+        // Get third byte
         if (i >= src_len) break;
-        tmp[2] = base64_reverse_table[(unsigned char)src[i++]];
+        if (src[i] == '=') {
+            padding = 1;
+            tmp[2] = 0;
+            i++;
+        } else {
+            tmp[2] = base64_reverse_table[(unsigned char)src[i++]];
+        }
+
+        // Get fourth byte
         if (i >= src_len) break;
-        tmp[3] = base64_reverse_table[(unsigned char)src[i++]];
+        if (src[i] == '=') {
+            tmp[3] = 0;
+            i++;
+        } else {
+            tmp[3] = base64_reverse_table[(unsigned char)src[i++]];
+        }
 
         a = tmp[0];
         b = tmp[1];
         c = tmp[2];
         d = tmp[3];
 
+        // Always write first byte
         dst[j++] = (a << 2) | (b >> 4);
-        dst[j++] = (b << 4) | (c >> 2);
-        dst[j++] = (c << 6) | d;
+
+        // Write second byte if we have at least 2 input bytes
+        if (padding < 2) {
+            dst[j++] = (b << 4) | (c >> 2);
+        }
+
+        // Write third byte if we have all input bytes
+        if (padding == 0) {
+            dst[j++] = (c << 6) | d;
+        }
     }
 
     return j;
