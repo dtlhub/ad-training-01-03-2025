@@ -168,5 +168,25 @@ $(WASM_DIR)/reader-zig.wasm: docker-images
 	mv $(WASM_DIR)/output.wasm $@
 	sudo chown $(shell id -u):$(shell id -g) $@
 
+c-targets: $(C_TARGETS)
+
+go-targets: $(GO_TARGETS)
+
+rust-targets: $(RUST_TARGETS)
+
+zig-targets: $(ZIG_TARGETS)
+
+c-clean:
+	rm -rf $(C_TARGETS)
+
+go-clean:
+	rm -rf $(GO_TARGETS)
+
+rust-clean:
+	rm -rf $(RUST_TARGETS)
+
+zig-clean:
+	rm -rf $(ZIG_TARGETS)
+
 clean:
 	rm -rf $(WASM_DIR)/*.wasm
