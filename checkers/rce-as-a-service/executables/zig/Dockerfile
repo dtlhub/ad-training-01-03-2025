@@ -1,7 +1,10 @@
-FROM alpine:3.19
+FROM ubuntu:22.04
 
 # Install required packages
-RUN apk add --no-cache wget xz
+RUN apt-get update && apt-get install -y \
+    wget \
+    xz-utils \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Zig
 RUN wget https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz \
