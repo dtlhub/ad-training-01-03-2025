@@ -19,6 +19,7 @@ namespace user{
 
     bool add_user(char* username , char* password);
     bool checkUser(char* username , char* password);
+    bool changePassword(char* username, char* new_password);
 
     User find_user_by_username(char* username);
 }
