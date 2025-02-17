@@ -37,7 +37,7 @@ namespace order{
         return true;
     }
 
-    bool buy_order(char username[32], int balance) {
+    bool buy_order(char* username, int &balance, std::string &product_id) {
         std::ifstream orders_file(ORDERS_FILE);
         if (!orders_file.is_open()) {
             std::cerr << "[ERROR] Couldn't open orders file" << std::endl;
@@ -57,13 +57,16 @@ namespace order{
             if (sscanf(line.c_str(), "%31[^:]:%511[^:]:%31[^:]:%d",
                        order.name, order.description, order.author, &order.price) == 4) {
 
-                if (balance >= order.price) {
-                    bought_file << username << ":" << order.name << "\n";
-                    std::cout << "[INFO] Order " << order.name << " bought successfully!" << std::endl;
-                    return true;
-                } else {
-                    std::cerr << "[ERROR] Not enough balance!" << std::endl;
-                    return false;
+                if (product_id == order.name) {
+                    if (balance >= order.price) {
+                        balance -= order.price;
+                        bought_file << username << ":" << order.name << "\n";
+                        std::cout << "[INFO] Order " << order.name << " bought successfully!" << std::endl;
+                        return true;
+                    } else {
+                        std::cerr << "[ERROR] Not enough balance!" << std::endl;
+                        return false;
+                    }
                 }
             }
         }
@@ -71,6 +74,7 @@ namespace order{
         std::cerr << "[ERROR] Order not found!" << std::endl;
         return false;
     }
+
 
 
     std::vector<std::unordered_map<std::string, std::string> > file_to_vec() {

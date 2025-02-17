@@ -18,6 +18,7 @@ namespace parser {
     Request parse_request(const std::string &raw_request);
     std::unordered_map<std::string, std::string> parse_post_body(const std::string &body);
     void parse_cookies(const std::string &cookie_str, std::unordered_map<std::string, std::string> &cookies);
+    std::unordered_map<std::string, std::string> parse_query_params(const std::string &query);
 }
 
 #endif // PARSER_H

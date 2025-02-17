@@ -73,4 +73,19 @@ namespace parser {
         }
         return params;
     }
+
+    std::unordered_map<std::string, std::string> parse_query_params(const std::string &query) {
+        std::unordered_map<std::string, std::string> params;
+        std::istringstream query_stream(query);
+        std::string pair;
+        while (std::getline(query_stream, pair, '&')) {
+            size_t delim_pos = pair.find('=');
+            if (delim_pos != std::string::npos) {
+                std::string key = pair.substr(0, delim_pos);
+                std::string value = pair.substr(delim_pos + 1);
+                params[key] = value;
+            }
+        }
+        return params;
+    }
 }

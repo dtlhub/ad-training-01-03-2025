@@ -19,7 +19,7 @@ namespace order{
     };
 
     bool add_order(char* name, char* description, char* author, int price = 200);
-    bool buy_order(char username[32] , int balance);
+    bool buy_order(char* username , int& balance,std::string &product_id);
 
     std::vector<std::unordered_map<std::string, std::string> > file_to_vec();
     std::vector<std::unordered_map<std::string, std::string> > my_orders(std::string& username);
