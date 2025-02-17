@@ -40,11 +40,14 @@ void handle_register_post(int client_socket, const parser::Request &req) {
 
     if(registration) {
 
+        const char *token = "None";
+        token = auth::login(username.data());
+
         std::string response = "HTTP/1.1 302 Found\r\n"
-                               "Path=/; HttpOnly\r\n"
-                               "Location: /login\r\n"
-                               "Content-Length: 0\r\n"
-                               "\r\n";
+                               "Set-Cookie: session=" + std::string(token) + "; Path=/; HttpOnly\r\n"
+                                                                             "Location: /\r\n"
+                                                                             "Content-Length: 0\r\n"
+                                                                             "\r\n";
         send(client_socket, response.c_str(), response.length(), 0);
     }else{
         std::string template_str = template_engine::load_template("templates/register.html");

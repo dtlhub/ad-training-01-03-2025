@@ -1,16 +1,16 @@
 #include "user.h"
 #include "../authorization/auth.h"
-#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <sstream>
 
 namespace user {
     bool add_user(char* username, char* password) {
         std::ofstream out(USER_FILE, std::ios::app);
 
         if (!out.is_open()) {
-            std::cout << "[ERROR] Couldn't open file for writing";
+            std::cerr << "[ERROR] Couldn't open user file for writing" << USER_FILE << std::endl;
             return false;
         }
 
@@ -25,20 +25,26 @@ namespace user {
 
     bool checkUser(char* username, char* password) {
         std::ifstream in(USER_FILE);
-        if (!in) {
-            std::cerr << "[ERROR] Couldn't open file" << std::endl;
+        if (!in.is_open()) {
+            std::cerr << "[ERROR] Couldn't open user file for reading" << USER_FILE << std::endl;
             return false;
         }
 
         std::string line;
         while (std::getline(in, line)) {
-            char fileUsername[32], filePassword[32];
-            int balance;
+            std::istringstream iss(line);
+            std::string fileUsername, filePassword;
+            int balance = 0;
 
-            if (sscanf(line.c_str(), "%31[^:]:%31[^:]:%d", fileUsername, filePassword, &balance) == 3) {
-                if (strcmp(fileUsername, username) == 0 && strcmp(filePassword, password) == 0) {
+            // Читаем данные с разделением на части
+            if (std::getline(iss, fileUsername, ':') &&
+                std::getline(iss, filePassword, ':') &&
+                iss >> balance) {
+                if (fileUsername == username && filePassword == password) {
                     return true;
                 }
+            } else {
+                std::cerr << "[ERROR] Failed to parse line: " << line << std::endl;
             }
         }
         return false;
@@ -48,21 +54,24 @@ namespace user {
         User u = {};
         std::ifstream in(USER_FILE);
         if (!in.is_open()) {
-            std::cerr << "[ERROR] Couldn't open user file for reading" << std::endl;
+            std::cerr << "[ERROR] Couldn't open user file for reading" << USER_FILE << std::endl;
             return u;
         }
 
         std::string line;
         while (std::getline(in, line)) {
-            char fileUsername[32] = {};
-            char filePassword[32] = {};
+            std::istringstream iss(line);
+            std::string fileUsername, filePassword;
             int balance = 0;
 
-            if (sscanf(line.c_str(), "%31[^:]:%31[^:]:%d", fileUsername, filePassword, &balance) == 3) {
-                if (strcmp(fileUsername, username) == 0) {
-                    strncpy(u.username, fileUsername, sizeof(u.username) - 1);
+            // Читаем данные с разделением на части
+            if (std::getline(iss, fileUsername, ':') &&
+                std::getline(iss, filePassword, ':') &&
+                iss >> balance) {
+                if (fileUsername == username) {
+                    strncpy(u.username, fileUsername.c_str(), sizeof(u.username) - 1);
                     u.username[sizeof(u.username) - 1] = '\0';
-                    strncpy(u.password, filePassword, sizeof(u.password) - 1);
+                    strncpy(u.password, filePassword.c_str(), sizeof(u.password) - 1);
                     u.password[sizeof(u.password) - 1] = '\0';
                     u.balance = balance;
                     in.close();
@@ -76,10 +85,10 @@ namespace user {
         return u;
     }
 
-    bool changePassword( char* username,  char* new_password) {
+    bool changePassword(char* username, char* new_password) {
         std::ifstream in(USER_FILE);
         if (!in.is_open()) {
-            std::cerr << "[ERROR] Couldn't open user file for reading" << std::endl;
+            std::cerr << "[ERROR] Couldn't open user file for reading" << USER_FILE << std::endl;
             return false;
         }
 
@@ -88,12 +97,17 @@ namespace user {
         bool found = false;
 
         while (std::getline(in, line)) {
-            char fileUsername[32], filePassword[32];
-            int balance;
-            if (sscanf(line.c_str(), "%31[^:]:%31[^:]:%d", fileUsername, filePassword, &balance) == 3) {
-                if (strcmp(fileUsername, username) == 0) {
+            std::istringstream iss(line);
+            std::string fileUsername, filePassword;
+            int balance = 0;
+
+            // Читаем данные с разделением на части
+            if (std::getline(iss, fileUsername, ':') &&
+                std::getline(iss, filePassword, ':') &&
+                iss >> balance) {
+                if (fileUsername == username) {
                     found = true;
-                    lines.push_back(std::string(fileUsername) + ":" + new_password + ":" + std::to_string(balance));
+                    lines.push_back(fileUsername + ":" + new_password + ":" + std::to_string(balance));
                 } else {
                     lines.push_back(line);
                 }
