@@ -25,60 +25,50 @@ static const unsigned char base64_reverse_table[256] = {
 };
 
 size_t base64_decode(const char *src, size_t src_len, unsigned char *dst) {
-    size_t i = 0, j = 0;
-    unsigned char a, b, c, d;
-    unsigned char tmp[4];
-    int padding = 0;
+    size_t j = 0;
+    int group[4], count = 0, pad = 0;
 
-    while (i < src_len) {
-        // Skip whitespace
-        if (src[i] == '\n' || src[i] == '\r' || src[i] == ' ') {
-            i++;
+    // Process input in groups of 4 characters.
+    for (size_t i = 0; i < src_len; i++) {
+        char ch = src[i];
+
+        // Skip whitespace characters.
+        if (ch == '\n' || ch == '\r' || ch == ' ')
             continue;
-        }
 
-        // Count padding
-        if (src[i] == '=') {
-            padding++;
-            i++;
-            continue;
-        }
-
-        // Get first byte
-        if (i >= src_len) break;
-        tmp[0] = base64_reverse_table[(unsigned char)src[i++]];
-        if (tmp[0] == 0xff) continue;
-
-        // Get second byte
-        if (i >= src_len) break;
-        tmp[1] = base64_reverse_table[(unsigned char)src[i++]];
-        if (tmp[1] == 0xff) continue;
-
-        // Get third byte
-        if (i >= src_len) break;
-        tmp[2] = base64_reverse_table[(unsigned char)src[i++]];
-        if (tmp[2] == 0xff) continue;
-
-        // Get fourth byte
-        if (i >= src_len) break;
-        tmp[3] = base64_reverse_table[(unsigned char)src[i++]];
-        if (tmp[3] == 0xff) continue;
-
-        a = tmp[0];
-        b = tmp[1];
-        c = tmp[2];
-        d = tmp[3];
-
-        // Write output bytes
-        dst[j++] = (a << 2) | (b >> 4);
-        if (padding < 2) {
-            dst[j++] = (b << 4) | (c >> 2);
-            if (padding < 1) {
-                dst[j++] = (c << 6) | d;
+        if (ch == '=') {
+            // For padding, store 0 and count the padding.
+            group[count++] = 0;
+            pad++;
+        } else {
+            // If padding has already been encountered, further non-padding char is invalid.
+            if (pad > 0) {
+                // You may choose to handle this as an error;
+                // here we simply break out.
+                break;
             }
+            unsigned char val = base64_reverse_table[(unsigned char) ch];
+            if (val == 0xff) {
+                // Unknown character; skip it or you could treat it as an error.
+                continue;
+            }
+            group[count++] = val;
+        }
+
+        // Process a complete group of 4.
+        if (count == 4) {
+            dst[j++] = (group[0] << 2) | (group[1] >> 4);
+            if (pad < 2) {
+                dst[j++] = (group[1] << 4) | (group[2] >> 2);
+            }
+            if (pad == 0) {
+                dst[j++] = (group[2] << 6) | group[3];
+            }
+            // Reset for the next group.
+            count = 0;
+            pad = 0;
         }
     }
-
     return j;
 }
 
