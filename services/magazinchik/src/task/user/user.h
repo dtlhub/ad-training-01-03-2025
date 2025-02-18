@@ -9,6 +9,7 @@
 #define USER_FILE "/tmp/users.txt"
 
 #include <iostream>
+#include <cstring>
 
 namespace user{
     struct User{

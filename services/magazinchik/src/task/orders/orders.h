@@ -9,6 +9,9 @@
 #define BOUGHT_ORDERS "/tmp/bought.txt" // <username>:<order_name>
 
 #include <iostream>
+#include <vector>
+#include <cstring>
+#include <unordered_map>
 
 namespace order{
     struct Order{

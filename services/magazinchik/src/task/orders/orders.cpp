@@ -5,6 +5,9 @@
 
 #include <iostream>
 #include <fstream>
+#include <cstring>
+#include <vector>
+#include <unordered_map>
 
 namespace order{
     bool add_order(char* name, char* description, char* author, int price) {

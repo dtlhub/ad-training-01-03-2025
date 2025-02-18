@@ -7,8 +7,12 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <sstream>
+#include <thread>
+#include <vector>
+#include <mutex>
 
 namespace framework {
+    std::mutex client_mutex;
 
     std::string read_socket_data(int client_socket) {
         char buffer[4096];
@@ -36,21 +40,9 @@ namespace framework {
     }
 
     void handle_client(int client_socket) {
+        std::lock_guard<std::mutex> lock(client_mutex);
         std::string raw_request = read_socket_data(client_socket);
-
-        std::cout << "Raw request:\n" << raw_request << "\n\n";
-
         parser::Request req = parser::parse_request(raw_request);
-
-        std::cout << "Method: " << req.method << "\n";
-        std::cout << "Path: " << req.path << "\n";
-        std::cout << "Query: " << req.query << "\n";
-        std::cout << "Headers:\n";
-        for (const auto& [key, value] : req.headers) {
-            std::cout << key << ": " << value << "\n";
-        }
-        std::cout << "Body: " << req.body << "\n\n";
-
         auto handler = router::find_route(req.method, req.path);
 
         if (handler) {
@@ -100,6 +92,8 @@ namespace framework {
 
         std::cout << "[RUNNING] Сервер запущен на порту " << port << "\n";
 
+        std::vector<std::thread> threads;
+
         while (true) {
             int new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
             if (new_socket < 0) {
@@ -107,7 +101,11 @@ namespace framework {
                 continue;
             }
 
-            handle_client(new_socket);
+            threads.emplace_back(handle_client, new_socket);
+        }
+
+        for (auto& th : threads) {
+            if (th.joinable()) th.join();
         }
     }
 }

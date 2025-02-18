@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include <regex>
+#include <vector>
 
 namespace template_engine {
     std::string load_template(const std::string &filename) {

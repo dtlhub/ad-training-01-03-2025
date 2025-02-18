@@ -3,6 +3,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace template_engine {
     std::string load_template(const std::string &filename);
