@@ -95,15 +95,18 @@ void createGladiator() {
     char comment[40];
 
     printf("Enter name (login): ");
-    fgets(name, sizeof(name), stdin);
+    read(0 , name, sizeof(name));
+    //fgets(name, sizeof(name), stdin);
     name[strcspn(name, "\n")] = '\0';
 
     printf("Enter password: ");
-    fgets(pwd, sizeof(pwd), stdin);
+    read(0 , pwd, sizeof(pwd));
+    //fgets(pwd, sizeof(pwd), stdin);
     pwd[strcspn(pwd, "\n")] = '\0';
 
     printf("Enter comment: ");
-    fgets(comment, sizeof(comment), stdin);
+    read(0 , comment, sizeof(comment));
+    //fgets(comment, sizeof(comment), stdin);
     comment[strcspn(comment, "\n")] = '\0';
 
     srand(time(NULL));
@@ -134,11 +137,13 @@ int loginGladiator() {
     char pwd[40];
 
     printf("Enter name (login): ");
-    fgets(name, sizeof(name), stdin);
+    read(0 , name, sizeof(name));
+    //fgets(name, sizeof(name), stdin);
     name[strcspn(name, "\n")] = '\0';
 
     printf("Enter password: ");
-    fgets(pwd, sizeof(pwd), stdin);
+    read(0 , pwd, sizeof(pwd));
+    //fgets(pwd, sizeof(pwd), stdin);
     pwd[strcspn(pwd, "\n")] = '\0';
 
     DIR *d = opendir(GLADIATORS_DIR);
@@ -282,10 +287,10 @@ void fight() {
     fclose(fp);
 
     printf("Fight: %s vs %s\n", current.name, enemy.name);
-    for (int i = 0; i < 3; i++) {
-        sleep(1);
-        printf(".");
-    }
+    //for (int i = 0; i < 3; i++) {
+    //    sleep(1);
+    //    printf(".");
+    //}
     printf("\n");
 
     if (current.vtable && current.vtable->attack)
@@ -310,6 +315,61 @@ void fight() {
         printf(enemcomm);
     }
 }
+
+void deleteGladiator() {
+    char name[40];
+    char pwd[40];
+
+    printf("Enter name (login): ");
+    read(0, name, sizeof(name));
+    name[strcspn(name, "\n")] = '\0';
+
+    printf("Enter password: ");
+    read(0, pwd, sizeof(pwd));
+    pwd[strcspn(pwd, "\n")] = '\0';
+
+    DIR *d = opendir(GLADIATORS_DIR);
+    if (!d) {
+        printf("Error: failed to open directory %s\n", GLADIATORS_DIR);
+        return;
+    }
+
+    int found = 0;
+    struct dirent *de;
+    while ((de = readdir(d)) != NULL) {
+        if (strstr(de->d_name, "gladiator_") == de->d_name) {
+            char path[512];
+            snprintf(path, sizeof(path), "%s%s", GLADIATORS_DIR, de->d_name);
+
+            FILE *fp = fopen(path, "rb");
+            if (!fp)
+                continue;
+
+            Gladiator g;
+            if (fread(&g, sizeof(g), 1, fp) != 1) {
+                fclose(fp);
+                continue;
+            }
+            fclose(fp);
+
+            if (strcmp(g.name, name) == 0 && strcmp(g.pwd, pwd) == 0) {
+                if (remove(path) == 0) {
+                    printf("Gladiator '%s' has been deleted.\n", name);
+                } else {
+                    printf("Error deleting gladiator file.\n");
+                }
+                found = 1;
+                break;
+            }
+        }
+    }
+    closedir(d);
+
+    if (!found) {
+        printf("No such gladiator or incorrect password.\n");
+    }
+}
+
 
 void banner() {
     puts("==================================================================");
@@ -347,10 +407,11 @@ int main() {
         printf("\n--- Gladiator Arena ---\n");
         printf("1) Create a gladiator\n");
         printf("2) Hire an existing gladiator\n");
-        printf("3) Edit current gladiator parameters\n");
-        printf("4) View current gladiator parameters\n");
-        printf("5) Go to battle\n");
-        printf("6) Exit\n");
+        printf("3) Delete a Gladiator\n");
+        printf("4) Edit current gladiator parameters\n");
+        printf("5) View current gladiator parameters\n");
+        printf("6) Go to battle\n");
+        printf("7) Exit\n");
         printf("> ");
 
         int choice;
@@ -362,19 +423,22 @@ int main() {
             case 1:
                 createGladiator();
                 break;
+            case 3:
+                deleteGladiator();
+                break;
             case 2:
                 loginGladiator();
                 break;
-            case 3:
+            case 4:
                 updateCurrentGladiator();
                 break;
-            case 4:
+            case 5:
                 showCurrentGladiator();
                 break;
-            case 5:
+            case 6:
                 fight();
                 break;
-            case 6:
+            case 7:
                 printf("Goodbye!\n");
                 exit(0);
             default:
