@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   magazinchik:
-    build: magazinchik
+    build: ./task
     ports:
       - "8080:8080"
     restart: always
