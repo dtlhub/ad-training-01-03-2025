@@ -33,11 +33,11 @@ services:
 
   s3:
     ports:
-      - 8333:8333
-    build:
-      context: ./s3
-      dockerfile: Dockerfile
-    command: server -s3
+      - 8333:5000
+    image: jbergknoff/s3rver:latest
+    # build:
+    #   context: ./s3
+    #   dockerfile: Dockerfile
     volumes:
       - s3_data:/data
     healthcheck:

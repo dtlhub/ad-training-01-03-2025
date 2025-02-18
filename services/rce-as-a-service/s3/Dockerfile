@@ -1,4 +1,5 @@
-FROM chrislusf/seaweedfs:3.84
+FROM rclone/rclone:latest
 
-# For the sake of healthcheck
-RUN apk add curl
+WORKDIR /data
+
+CMD ["serve", "s3", "/data", "--no-auth", "--addr", ":8333"]
