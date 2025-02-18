@@ -27,6 +27,8 @@ impl Storage {
     }
 
     pub async fn setup_user_directory(&self, user: &str) -> Result<Directory> {
+        log::info!("Setting up directory for {}", user);
+
         let mut bucket = Bucket::new(user, self.region.clone(), self.credentials.clone())?;
         if !bucket.exists().await? {
             bucket = Bucket::create_with_path_style(
@@ -89,10 +91,12 @@ impl Directory {
     }
 
     async fn move_from_s3_to_local(&self) -> Result<()> {
+        log::info!("Moving from s3 to local");
         let list_bucket_results = self
             .bucket
             .list("/".to_string(), Some("/".to_string()))
             .await?;
+        log::info!("Listed bucket");
 
         let mut files_left = self.files_quota;
         let mut bytes_left = self.bytes_quota;
@@ -103,16 +107,21 @@ impl Directory {
                 }
 
                 let filename = content.key.as_str().split("/").last().unwrap();
+                log::info!("Creating file: {}", filename);
                 let mut file = tokio::fs::File::create(self.path().join(filename)).await?;
+                log::info!("Created file");
                 self.bucket
                     .get_object_range_to_writer(filename, 0, Some(content.size), &mut file)
                     .await?;
+                log::info!("Got object");
 
                 files_left -= 1;
                 bytes_left -= content.size;
 
                 // TODO: don't delete in case of failure of running the script?
+                log::info!("Deleting object");
                 self.bucket.delete_object(filename).await?;
+                log::info!("Deleted object");
             }
         }
 

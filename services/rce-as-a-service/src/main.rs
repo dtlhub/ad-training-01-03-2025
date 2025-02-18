@@ -115,4 +115,3 @@ async fn rocket() -> _ {
         .configure(config)
         .mount("/api", routes![login, execute])
 }
-

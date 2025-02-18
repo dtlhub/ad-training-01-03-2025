@@ -12,7 +12,7 @@ def binaries_from_langs(base_name: str, langs: list[str]) -> list[str]:
     return [f"executables/wasm/{base_name}-{lang}.wasm" for lang in langs]
 
 
-ALL_LANGUAGES = ["zig"]
+ALL_LANGUAGES = ["c"]
 
 
 @dataclass
@@ -58,15 +58,15 @@ class SimpleCheck(ExecutableCheck):
     name = "simple"
 
     def __init__(self):
-        argc = random.randint(1, 10)
+        argc = random.randint(1, 5)
         encoding = random.choice(
             [
                 lambda x: x,
                 lambda x: x.encode().hex(),
-                lambda x: base64.b64encode(x.encode()).decode(),
+                lambda x: base64.b64encode(x.encode()).decode().replace("=", "=="),
             ]
         )
-        self.args = [encoding(rnd_string(random.randint(3, 10))) for _ in range(argc)]
+        self.args = [encoding(rnd_string(random.randint(10, 100))) for _ in range(argc)]
 
     def get_launches(self) -> list[Launch]:
         binary = random.choice(binaries_from_langs(self.name, ALL_LANGUAGES))

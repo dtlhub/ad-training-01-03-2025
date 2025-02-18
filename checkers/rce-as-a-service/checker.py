@@ -8,7 +8,7 @@ from checklib import (
     cquit,
     Status,
     BaseChecker,
-    rnd_username,
+    rnd_username as checklib_rnd_username,
     rnd_password,
     get_initialized_session,
 )
@@ -20,6 +20,10 @@ from executable_checks import (
     ReverserCheck,
     FileSystemCheck,
 )
+
+
+def rnd_username():
+    return checklib_rnd_username().lower()
 
 
 class Checker(BaseChecker):
@@ -36,8 +40,8 @@ class Checker(BaseChecker):
 
         executable_checks = [
             SimpleCheck(),
-            # ReverserCheck(),
-            # FileSystemCheck(),
+            ReverserCheck(),
+            FileSystemCheck(),
         ]
         with ThreadPoolExecutor(max_workers=len(executable_checks)) as executor:
             list(executor.map(self.check_executable, executable_checks))

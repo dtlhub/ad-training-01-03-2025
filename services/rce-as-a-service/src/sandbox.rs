@@ -23,10 +23,10 @@ impl ComponentState {
             wasi_ctx: wasi,
             resource_table: ResourceTable::new(),
             limits: StoreLimitsBuilder::new()
-                .memory_size(1.mebibytes().as_u64() as usize)
-                .memories(1)
-                .instances(1)
-                .tables(1)
+                .memory_size(3.mebibytes().as_u64() as usize)
+                .memories(5)
+                .instances(5)
+                .tables(100)
                 .build(),
         }
     }
@@ -86,9 +86,18 @@ impl Sandbox {
         let close_dir = dir.close().await;
 
         match (run_wasm, close_dir) {
-            (Err(e1), _) => Err(e1),
-            (Ok(_), Err(e2)) => Err(e2),
-            (Ok(wasm_result), Ok(_)) => Ok(wasm_result),
+            (Err(e1), _) => {
+                log::info!("Failed to run wasm for user {}: {}", user, e1);
+                Err(e1)
+            }
+            (Ok(_), Err(e2)) => {
+                log::warn!("Failed to close user directory for user {}: {}", user, e2);
+                Err(e2)
+            }
+            (Ok(wasm_result), Ok(_)) => {
+                log::info!("Wasm executed successfully for user {}", user);
+                Ok(wasm_result)
+            }
         }
     }
 
@@ -101,11 +110,14 @@ impl Sandbox {
         let stdout = pipe::MemoryOutputPipe::new(64.kibibytes().as_u64() as usize);
         let stderr = pipe::MemoryOutputPipe::new(64.kibibytes().as_u64() as usize);
 
+        let mut real_args = args.iter().map(|a| a.as_ref()).collect::<Vec<_>>();
+        real_args.insert(0, "wasm");
+
         let wasi = WasiCtxBuilder::new()
             .stdin(pipe::ClosedInputStream {})
             .stdout(stdout.clone())
             .stderr(stderr.clone())
-            .args(args)
+            .args(real_args.leak())
             .inherit_env()
             .inherit_network()
             .preopened_dir(&host_mount, "/", DirPerms::all(), FilePerms::all())?
