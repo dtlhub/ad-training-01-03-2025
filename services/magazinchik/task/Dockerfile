@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 WORKDIR /app
 
@@ -6,5 +6,5 @@ COPY .. .
 
 EXPOSE 8080
 
-RUN chmod +x ./m1
-CMD ["./m1"]
+RUN chmod +x ./magazinchik
+CMD ["./magazinchik"]

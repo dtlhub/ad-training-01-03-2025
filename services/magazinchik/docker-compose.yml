@@ -1,6 +1,7 @@
 services:
   magazinchik:
     build: ./task
+    platform: linux/amd64
     ports:
       - "8080:8080"
     restart: always
