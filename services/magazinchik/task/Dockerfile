@@ -6,5 +6,5 @@ COPY .. .
 
 EXPOSE 8080
 
-RUN chmod +x ./magazinchik
-CMD ["./magazinchik"]
+RUN chmod +x ./m1
+CMD ["./m1"]

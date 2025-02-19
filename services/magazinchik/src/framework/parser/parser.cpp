@@ -1,6 +1,8 @@
 #include "parser.h"
 #include <sstream>
 #include <iostream>
+#include <unordered_set>
+#include <algorithm>
 
 namespace parser {
 
@@ -59,6 +61,28 @@ namespace parser {
         return req;
     }
 
+    std::string url_decode(const std::string &str) {
+        std::string result;
+        for (size_t i = 0; i < str.length(); ++i) {
+            if (str[i] == '%' && i + 2 < str.length()) {
+                int hex_value;
+                std::istringstream hex_stream(str.substr(i + 1, 2));
+                hex_stream >> std::hex >> hex_value;
+                if (!hex_stream.fail()) {
+                    result += static_cast<char>(hex_value);
+                    i += 2;
+                } else {
+                    result += str[i];
+                }
+            } else if (str[i] == '+') {
+                result += ' ';
+            } else {
+                result += str[i];
+            }
+        }
+        return result;
+    }
+
     std::unordered_map<std::string, std::string> parse_post_body(const std::string &body) {
         std::unordered_map<std::string, std::string> params;
         std::istringstream body_stream(body);
@@ -66,8 +90,8 @@ namespace parser {
         while (std::getline(body_stream, pair, '&')) {
             size_t delim_pos = pair.find('=');
             if (delim_pos != std::string::npos) {
-                std::string key = pair.substr(0, delim_pos);
-                std::string value = pair.substr(delim_pos + 1);
+                std::string key = url_decode(pair.substr(0, delim_pos));
+                std::string value = url_decode(pair.substr(delim_pos + 1));
                 params[key] = value;
             }
         }
