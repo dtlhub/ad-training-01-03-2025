@@ -1,8 +1,14 @@
+#!/usr/bin/env python3
+
 import sys
 import requests
+import json
 from checklib import *
 import random
 import string
+import traceback
+
+from checklib.checker import CheckFinished
 
 PORT = 8080
 
@@ -68,35 +74,68 @@ class Checker(BaseChecker):
 
     def __init__(self, *args, **kwargs):
         super(Checker, self).__init__(*args, **kwargs)
+        self.username = "static_user"
+        self.password = "static_pass"
         self.mch = CheckMachine(self)
+
+    def cquit(self, status, public='', private=''):
+        if status == Status.OK:
+            print(public)
+            sys.exit(101)
+        else:
+            print(private, file=sys.stderr)
+            sys.exit(104)
 
     def action(self, action, *args, **kwargs):
         try:
             super(Checker, self).action(action, *args, **kwargs)
-        except requests.exceptions.ConnectionError:
-            self.cquit(Status.DOWN, 'Connection error', 'Got requests connection error')
+        except requests.exceptions.ConnectionError as e:
+            self.cquit(Status.DOWN, 'Connection error', f'Got requests connection error: {str(e)}')
+        except Exception as e:
+            error_traceback = traceback.format_exc()
+            self.cquit(Status.DOWN, 'Unexpected error', f'Unexpected error: {str(e)}\nTraceback:\n{error_traceback}')
 
     def check(self):
-        session = get_initialized_session()
-        username, password = rnd_username(), rnd_password()
+        try:
+            session = get_initialized_session()
+            username, password = rnd_username(), rnd_password()
 
-        order_name = rnd_string(10)
-        order_description = generate_flag()
-        order_price = rnd_integer(100, 1000)
+            order_name = rnd_string(10)
+            order_description = generate_flag()
+            order_price = rnd_integer(100, 1000)
 
-        self.mch.register(session, username, password)
-        self.mch.login(session, username, password, Status.MUMBLE)
-        self.mch.create_order(session, order_name, order_description, order_price)
-        orders = self.mch.get_order(session, Status.MUMBLE)
+            self.mch.register(session, username, password)
+            self.mch.login(session, username, password, Status.MUMBLE)
+            self.mch.create_order(session, order_name, order_description, order_price)
 
-        self.assert_in(order_name, orders, "Order not found in the list")
-        self.assert_in(order_description, orders, "Order description not found in the list")
+            orders = self.mch.get_order(session, Status.MUMBLE)
+            self.assert_in(order_name, orders, "Order not found in the list")
+            self.assert_in(order_description, orders, "Order description not found in the list")
 
-        self.cquit(Status.OK)
+            self.cquit(Status.OK)
+        except CheckFinished:
+            raise
+        except Exception as e:
+            error_traceback = traceback.format_exc()
+            self.cquit(Status.DOWN, 'Unexpected error', f'Unexpected error in check: {str(e)}\nTraceback:\n{error_traceback}')
+
+    def info(self):
+        info = {
+            "actions": [
+                {"name": "check", "usage": "checker.py check <ip>"},
+                {"name": "put", "usage": "checker.py put <ip> <flag_id> <flag> <vuln>"},
+                {"name": "get", "usage": "checker.py get <ip> <login:password:order_name> <flag> <vuln>"}
+            ],
+            "vulns": self.vulns,
+            "vuln_details": [{"1": "bof"}, {"2": "change_passwd"}],
+            "timeout": 5,
+            "attack_data": False,
+        }
+        print(json.dumps(info, indent=4))
+        sys.exit(101)
 
     def put(self, flag_id: str, flag: str, vuln: str):
         session = get_initialized_session()
-        username, password = rnd_username(), rnd_password()
 
         order_name = rnd_string(10)
         order_description = flag
@@ -107,34 +146,32 @@ class Checker(BaseChecker):
         elif vuln == "2":
             order_name += "_2"
 
-        self.mch.register(session, username, password)
-        self.mch.login(session, username, password, Status.MUMBLE)
+        try:
+            self.mch.register(session, self.username, self.password)
+        except AssertionError:
+            pass
+
+        self.mch.login(session, self.username, self.password, Status.MUMBLE)
         self.mch.create_order(session, order_name, order_description, order_price)
 
-        self.cquit(Status.OK, order_name, f'{username}:{password}:{order_name}')
+        self.cquit(Status.OK, order_name, order_name)
 
     def get(self, flag_id: str, flag: str, vuln: str):
         session = get_initialized_session()
-        username, password, order_name = flag_id.split(':')
 
-        self.mch.login(session, username, password, Status.CORRUPT)
+        self.mch.login(session, self.username, self.password, Status.CORRUPT)
         orders = self.mch.get_order(session, Status.CORRUPT)
 
-        self.assert_in(order_name, orders, "Order not found in the list", Status.CORRUPT)
+        self.assert_in(flag_id, orders, "Order not found in the list", Status.CORRUPT)
         self.assert_in(flag, orders, "Flag not found in the order description", Status.CORRUPT)
 
         self.cquit(Status.OK)
 
 if __name__ == '__main__':
     c = Checker(sys.argv[2])
-
     try:
-        if sys.argv[1] is "info":
-            print("actions:")
-            print("1) check --> checker.py check <ip>")
-            print("2) put -->   checker.py put <ip> <flag_id> <flag> <vuln>")
-            print("3) get -->   checker.py get <ip> <login:password:order_name> <flag> <vuln>")
-            sys.exit(1)
+        if sys.argv[1] == "info":
+            c.info()
         else:
             c.action(sys.argv[1], *sys.argv[3:])
     except c.get_check_finished_exception():

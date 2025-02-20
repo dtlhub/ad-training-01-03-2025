@@ -8,7 +8,6 @@
 
 namespace auth {
     Session sessions[MAX_SESSIONS] = {};
-
     void generate_token(char* output_hash, size_t output_size) {
         if (output_size < 65) {
             fprintf(stderr, "Output buffer too small\n");

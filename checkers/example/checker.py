@@ -71,8 +71,14 @@ class Checker(BaseChecker):
 
 if __name__ == '__main__':
     c = Checker(sys.argv[2])
-
     try:
-        c.action(sys.argv[1], *sys.argv[3:])
+        if sys.argv[1] == "info":
+            print("actions:")
+            print("1) check --> checker.py check <ip>")
+            print("2) put -->   checker.py put <ip> <flag>")
+            print("3) get -->   checker.py get <ip> <login:password> <flag>")
+            sys.exit(1)
+        else:
+            c.action(sys.argv[1], *sys.argv[3:])
     except c.get_check_finished_exception():
         cquit(Status(c.status), c.public, c.private)

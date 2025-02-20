@@ -16,7 +16,7 @@
 namespace order{
     struct Order{
         char name[32];
-        char description[512]; // inset flag here
+        char description[512];
         char author[32];
         int price=200;
     };
