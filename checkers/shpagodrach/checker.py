@@ -2,6 +2,9 @@
 import sys
 import random
 import string
+import os
+argv = [c for c in sys.argv]
+os.environ['PWNLIB_NOTERM'] = '1'
 from pwn import *
 from checklib import *
 from threading import Lock
@@ -101,12 +104,6 @@ class Checker(BaseChecker):
             self.cquit(Status.OK)
 
     def put(self, flag_id, flag, vuln="2"):
-        print("DEBUG: sys.argv =", sys.argv, file=sys.stderr)
-        print("DEBUG flag_id =", flag_id, file=sys.stderr)
-        print("DEBUG flag    =", flag, file=sys.stderr)
-        print("DEBUG vuln    =", vuln, file=sys.stderr)
-        if flag == "1":
-            log.error("INVALID FLAG")
         with serial_lock:
             try:
                 io = self.mch.connect()
@@ -155,9 +152,9 @@ class Checker(BaseChecker):
             self.cquit(Status.OK)
 
 if __name__ == '__main__':
-    print("DEBUG: sys.argv =", sys.argv, file=sys.stderr)
-    c = Checker(sys.argv[2])
+    #print("DEBUG: sys.argv =", sys.argv, file=sys.stderr)
+    c = Checker(argv[2])
     try:
-        c.action(sys.argv[1], *sys.argv[3:])
+        c.action(argv[1], *argv[3:])
     except c.get_check_finished_exception():
         cquit(Status(c.status), c.public, c.private)

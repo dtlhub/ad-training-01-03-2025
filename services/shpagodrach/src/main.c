@@ -10,12 +10,34 @@
 #include <sys/inotify.h>
 #include <openssl/sha.h>
 #include "vtable_lib.h"
+#include <errno.h>
 
 #define GLADIATORS_DIR "/tmp/gladiators/"
 #define BANANA_FILE "banana.jpg"
 #define BANANA_EXPECTED_HASH "2baac52a877358ae99b8dbcdbd362ef6db982e21365e83cafa52255a672fe5e8"
+#define MAX_RANDOM_VALUE 1000000
 
 void* monitor_banana(void* arg);
+
+
+
+
+int get_random_id() {
+    int id;
+    FILE *f = fopen("/dev/urandom", "rb");
+    if (!f) {
+        perror("fopen(/dev/urandom)");
+        exit(1);
+    }
+    if (fread(&id, sizeof(id), 1, f) != 1) {
+        perror("fread(/dev/urandom)");
+        fclose(f);
+        exit(1);
+    }
+    fclose(f);
+    return abs(id);
+}
+
 
 int verify_banana() {
     FILE *fp = fopen(BANANA_FILE, "rb");
@@ -95,22 +117,18 @@ void createGladiator() {
     char comment[40];
 
     printf("Enter name (login): ");
-    read(0 , name, sizeof(name));
-    //fgets(name, sizeof(name), stdin);
+    read(0, name, sizeof(name));
     name[strcspn(name, "\n")] = '\0';
 
     printf("Enter password: ");
-    read(0 , pwd, sizeof(pwd));
-    //fgets(pwd, sizeof(pwd), stdin);
+    read(0, pwd, sizeof(pwd));
     pwd[strcspn(pwd, "\n")] = '\0';
 
     printf("Enter comment: ");
-    read(0 , comment, sizeof(comment));
-    //fgets(comment, sizeof(comment), stdin);
+    read(0, comment, sizeof(comment));
     comment[strcspn(comment, "\n")] = '\0';
 
-    srand(time(NULL));
-    int id = rand();
+    int id = get_random_id();
     char filename[256];
     snprintf(filename, sizeof(filename), "%sgladiator_%d.dat", GLADIATORS_DIR, id);
 
@@ -131,6 +149,7 @@ void createGladiator() {
 
     printf("Gladiator created! ID = %d\n", id);
 }
+
 
 int loginGladiator() {
     char name[40];
@@ -270,8 +289,7 @@ void fight() {
         return;
     }
 
-    srand(time(NULL));
-    int idx = rand() % count;
+    int idx = get_random_range(count);
 
     char path[512];
     snprintf(path, sizeof(path), "%s%s", GLADIATORS_DIR, fileList[idx]->d_name);
@@ -287,11 +305,6 @@ void fight() {
     fclose(fp);
 
     printf("Fight: %s vs %s\n", current.name, enemy.name);
-    //for (int i = 0; i < 3; i++) {
-    //    sleep(1);
-    //    printf(".");
-    //}
-    printf("\n");
 
     if (current.vtable && current.vtable->attack)
         current.vtable->attack(&current);
@@ -300,11 +313,10 @@ void fight() {
 
     char enemcomm[40];
     char mycomm[40];
+    strncpy(enemcomm, enemy.comment, sizeof(enemcomm));
+    strncpy(mycomm, current.comment, sizeof(mycomm));
 
-    strncpy(enemcomm, enemy.comment, 40);
-    strncpy(mycomm, current.comment, 40);
-    
-    int res = rand() % 1000000;
+    int res = get_random_range(MAX_RANDOM_VALUE);
     if (res != 0) {
         printf("Winner -> %s\n", enemy.name);
         printf("You lost!\n");
@@ -314,6 +326,28 @@ void fight() {
         printf("You won!\n");
         printf(enemcomm);
     }
+}
+
+int get_random_range(int max_val) {
+    if (max_val <= 0) {
+        return 0;
+    }
+
+    unsigned int buf;
+    int fd = open("/dev/urandom", O_RDONLY);
+    if (fd < 0) {
+        perror("open(/dev/urandom)");
+        return 0;
+    }
+
+    if (read(fd, &buf, sizeof(buf)) != sizeof(buf)) {
+        perror("read(/dev/urandom)");
+        close(fd);
+        return 0;
+    }
+
+    close(fd);
+    return buf % max_val;
 }
 
 void deleteGladiator() {
