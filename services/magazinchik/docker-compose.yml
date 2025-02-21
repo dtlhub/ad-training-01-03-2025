@@ -1,9 +1,10 @@
 services:
   magazinchik:
     build: ./task
+    platform: linux/amd64
     ports:
       - "8080:8080"
     restart: unless-stopped
     pids_limit: 256
-    cpus: "2"
-    mem_limit: 2g
+    mem_limit: 1g
+    cpus: 1
