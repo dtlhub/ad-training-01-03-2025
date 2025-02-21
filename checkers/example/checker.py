@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import json
 import sys
 import requests
 
@@ -57,6 +57,20 @@ class Checker(BaseChecker):
 
         self.cquit(Status.OK, note_name_public, f'{username}:{password}:{note_name_full}')
 
+    def info(self):
+        info = {
+            "actions": [
+                {"name": "check", "usage": "checker.py check <ip>"},
+                {"name": "put", "usage": "checker.py put <ip> <flag_id> <flag> <vuln>"},
+                {"name": "get", "usage": "checker.py get <ip> <login:password:order_name> <flag> <vuln>"}
+            ],
+            "vulns": self.vulns,
+            "timeout": self.timeout,
+            "attack_data": self.uses_attack_data,
+        }
+        print(json.dumps(info, indent=4))
+        sys.exit(101)
+
     def get(self, flag_id: str, flag: str, vuln: str):
         s = get_initialized_session()
         username, password, note_name_full = flag_id.split(':')
@@ -73,11 +87,7 @@ if __name__ == '__main__':
     c = Checker(sys.argv[2])
     try:
         if sys.argv[1] == "info":
-            print("actions:")
-            print("1) check --> checker.py check <ip>")
-            print("2) put -->   checker.py put <ip> <flag>")
-            print("3) get -->   checker.py get <ip> <login:password> <flag>")
-            sys.exit(1)
+            c.info()
         else:
             c.action(sys.argv[1], *sys.argv[3:])
     except c.get_check_finished_exception():
