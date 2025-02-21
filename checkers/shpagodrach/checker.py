@@ -3,185 +3,161 @@ import sys
 import random
 import string
 from pwn import *
+from checklib import *
+from threading import Lock
 
-STATUS_UP = 101
-STATUS_DOWN = 102
-STATUS_MUMBLE = 103
-STATUS_CORRUPT = 104
+context.log_console = sys.stderr
+context.log_level = 'error'
 
 PORT = 7272
+
+serial_lock = Lock()
 
 def generate_str(length=15):
     letters = string.ascii_letters + string.digits
     return ''.join(random.choice(letters) for _ in range(length))
 
-def create_gladiator(io, name, password, comment):
-    io.sendlineafter(b"> ", b"1")
-    io.sendlineafter(b"Enter name (login): ", name.encode())
-    io.sendlineafter(b"Enter password: ", password.encode())
-    io.sendlineafter(b"Enter comment: ", comment.encode())
-    output = io.recvline(timeout=3)
-    if b"Gladiator created!" not in output:
-        log.error("Failed to create gladiator")
-        return False
-    return True
+class PwnCheckMachine:
+    def __init__(self, host):
+        self.host = host
+        self.port = PORT
 
-def check_fight(io, comment):
-    io.sendlineafter(b"> ", b"6")
-    fight = io.recvuntil(b'You lost!\n', timeout=5)
-    if ((not (b'You lost!\n' in fight[-10:])) or ((b'You won!\n' in fight[-10:]))):
-        log.error("Fight not working")
-        return False
-    if ((io.recv(20).decode() != comment)):
-        log.error("Another comment")
-        return False
-    return True
+    def connect(self):
+        return remote(self.host, self.port, timeout=7)
 
-def login_gladiator(io, name, password):
-    io.sendlineafter(b"> ", b"2")
-    io.sendlineafter(b"Enter name (login): ", name.encode())
-    io.sendlineafter(b"Enter password: ", password.encode())
-    output = io.recvline(timeout=3)
-    if b"Successfully hired gladiator" not in output:
-        log.error("Failed to login as gladiator")
-        return False
-    return True
+    def create_gladiator(self, io, name, password, comment):
+        io.sendlineafter(b"> ", b"1")
+        io.sendlineafter(b"Enter name (login): ", name.encode())
+        io.sendlineafter(b"Enter password: ", password.encode())
+        io.sendlineafter(b"Enter comment: ", comment.encode())
+        output = io.recvline(timeout=3)
+        if b"Gladiator created!" not in output:
+            raise Exception("Failed to create gladiator")
 
-def delete_gladiator(io, name, password):
-    io.sendlineafter(b'> ', b'3')
-    io.sendlineafter(b"Enter name (login): ", name.encode())
-    io.sendlineafter(b"Enter password: ", password.encode())
-    output = io.recvline(timeout=3)
-    if b"has been deleted." not in output:
-        log.error("Failed to login as gladiator")
-        return False
-    return True
+    def login_gladiator(self, io, name, password):
+        io.sendlineafter(b"> ", b"2")
+        io.sendlineafter(b"Enter name (login): ", name.encode())
+        io.sendlineafter(b"Enter password: ", password.encode())
+        output = io.recvuntil(b"\n", timeout=3)
+        if b"Successfully hired gladiator" not in output:
+            raise Exception("Failed to login as gladiator: " + output.decode(errors='ignore'))
 
+    def check_fight(self, io, comment):
+        io.sendlineafter(b"> ", b"6")
+        fight = io.recvuntil(b'You lost!\n', timeout=5)
+        if (b'You lost!\n' not in fight[-10:]):
+            raise Exception("Fight result is invalid")
+        other_comment = io.recvline(timeout=3).strip()
+        if other_comment != comment.encode():
+            raise Exception("Enemy comment mismatch")
 
-def view_gladiator(io):
-    io.sendlineafter(b"> ", b"5")
-    data = io.recvuntil(b"---", timeout=3)
-    return data
+    def view_gladiator(self, io):
+        io.sendlineafter(b"> ", b"5")
+        data = io.recvuntil(b"---", timeout=3)
+        return data
 
-def exit_service(io):
-    io.sendlineafter(b"> ", b"7")
+    def delete_gladiator(self, io, name, password):
+        io.sendlineafter(b"> ", b"3")
+        io.sendlineafter(b"Enter name (login): ", name.encode())
+        io.sendlineafter(b"Enter password: ", password.encode())
+        output = io.recvline(timeout=3)
+        if b"has been deleted." not in output:
+            raise Exception("Failed to delete gladiator")
 
-def check(ip):
-    try:
-        io = remote(ip, PORT, timeout=7)
-    except Exception as e:
-        print("DOWN", flush=True)
-        sys.exit(STATUS_DOWN)
-    
-    name = generate_str()
-    password = generate_str()
-    comment = generate_str(20)
-    
-    if not create_gladiator(io, name, password, comment):
-        io.close()
-        print("MUMBLE", flush=True)
-        sys.exit(STATUS_MUMBLE)
-    
-    if not login_gladiator(io, name, password):
-        io.close()
-        print("MUMBLE", flush=True)
-        sys.exit(STATUS_MUMBLE)
-    if not check_fight(io, comment):
-        io.close()
-        print("MUMBLE", flush=True)
-        sys.exit(STATUS_MUMBLE)
+    def exit_service(self, io):
+        io.sendlineafter(b"> ", b"7")
 
-    
-    data = view_gladiator(io)
+class Checker(BaseChecker):
+    vulns = 1
+    timeout = 5
+    uses_attack_data = False
 
-    if not delete_gladiator(io, name, password):
-        io.close()
-        print("MUMBLE", flush=True)
-        sys.exit(STATUS_MUMBLE)
+    def __init__(self, host, *args, **kwargs):
+        super().__init__(host, *args, **kwargs)
+        self.mch = PwnCheckMachine(host)
 
-    io.close()
-    
-    if name.encode() not in data or comment.encode() not in data:
-        print("MUMBLE", flush=True)
-        sys.exit(STATUS_MUMBLE)
-    
-    print("OK", flush=True)
-    sys.exit(STATUS_UP)
+    def check(self):
+        with serial_lock:
+            try:
+                io = self.mch.connect()
+            except Exception:
+                self.cquit(Status.DOWN, "Connection error")
+            name = generate_str()
+            password = generate_str()
+            comment = generate_str(20)
+            try:
+                self.mch.create_gladiator(io, name, password, comment)
+                self.mch.login_gladiator(io, name, password)
+                self.mch.check_fight(io, comment)
+                data = self.mch.view_gladiator(io)
+                self.mch.delete_gladiator(io, name, password)
+                self.mch.exit_service(io)
+                io.close()
+            except Exception as e:
+                io.close()
+                self.cquit(Status.MUMBLE, "MUMBLE: " + str(e))
+            if name.encode() not in data or comment.encode() not in data:
+                self.cquit(Status.MUMBLE, "Gladiator data not found in view")
+            self.cquit(Status.OK)
 
-def put(ip, flag):
-    try:
-        io = remote(ip, PORT, timeout=7)
-    except Exception as e:
-        print("DOWN", flush=True)
-        sys.exit(STATUS_DOWN)
-    
-    name = generate_str()
-    password = generate_str()
-    
-    if not create_gladiator(io, name, password, flag):
-        io.close()
-        print("MUMBLE", flush=True)
-        sys.exit(STATUS_MUMBLE)
-    
-    exit_service(io)
-    io.close()
-    
-    flag_id = f"{name}:{password}"
-    print(flag_id, flush=True)
-    sys.exit(STATUS_UP)
+    def put(self, flag_id, flag, vuln="2"):
+        print("DEBUG: sys.argv =", sys.argv, file=sys.stderr)
+        print("DEBUG flag_id =", flag_id, file=sys.stderr)
+        print("DEBUG flag    =", flag, file=sys.stderr)
+        print("DEBUG vuln    =", vuln, file=sys.stderr)
+        if flag == "1":
+            log.error("INVALID FLAG")
+        with serial_lock:
+            try:
+                io = self.mch.connect()
+            except Exception:
+                self.cquit(Status.DOWN, "Connection error")
 
-def get(ip, flag_id, flag):
-    try:
-        io = remote(ip, PORT, timeout=7)
-    except Exception as e:
-        print("DOWN", flush=True)
-        sys.exit(STATUS_DOWN)
-    
-    try:
-        name, password = flag_id.split(":")
-    except Exception as e:
-        io.close()
-        print("CORRUPT", flush=True)
-        sys.exit(STATUS_CORRUPT)
-    
-    if not login_gladiator(io, name, password):
-        io.close()
-        print("MUMBLE", flush=True)
-        sys.exit(STATUS_MUMBLE)
-    
-    data = view_gladiator(io)
-    io.close()
-    
-    if flag.encode() not in data:
-        print("CORRUPT", flush=True)
-        sys.exit(STATUS_CORRUPT)
-    
-    print("OK", flush=True)
-    sys.exit(STATUS_UP)
+            name = generate_str()
+            password = generate_str()
+            try:
+                self.mch.create_gladiator(io, name, password, flag)
+                self.mch.exit_service(io)
+                io.close()
+            except Exception as e:
+                io.close()
+                self.cquit(Status.MUMBLE, "MUMBLE: " + str(e))
+
+            flag_id = f"{name}:{password}"
+            self.cquit(Status.OK, flag_id)
+
+    def get(self, flag_id, flag, exploit=None, vuln="1"):
+        with serial_lock:
+            flag_id = flag_id.split()[0]
+
+            try:
+                io = self.mch.connect()
+            except Exception:
+                self.cquit(Status.DOWN, "Connection error")
+
+            try:
+                name, password = flag_id.split(":", 1)
+            except Exception:
+                io.close()
+                self.cquit(Status.CORRUPT, f"Invalid flag_id format: {flag_id}")
+
+            try:
+                self.mch.login_gladiator(io, name, password)
+                data = self.mch.view_gladiator(io)
+                io.close()
+            except Exception as e:
+                io.close()
+                self.cquit(Status.MUMBLE, "MUMBLE: " + str(e))
+
+            if flag.encode() not in data:
+                self.cquit(Status.CORRUPT, "Flag not found")
+
+            self.cquit(Status.OK)
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        print("Usage: checker.py <action> <ip> [flag_id] [flag]")
-        sys.exit(1)
-    
-    action = sys.argv[1]
-    ip = sys.argv[2]
-    
-    if action == "check":
-        check(ip)
-    elif action == "put":
-        if len(sys.argv) != 4:
-            print("Usage: checker.py put <ip> <flag_id> <flag>")
-            sys.exit(1)
-        flag = sys.argv[3]
-        put(ip, flag)
-    elif action == "get":
-        if len(sys.argv) != 5:
-            print("Usage: checker.py get <ip> <login:password> <flag>")
-            sys.exit(1)
-        flag_id = sys.argv[3]
-        flag = sys.argv[4]
-        get(ip, flag_id, flag)
-    else:
-        print("Unknown action")
-        sys.exit(1)
+    print("DEBUG: sys.argv =", sys.argv, file=sys.stderr)
+    c = Checker(sys.argv[2])
+    try:
+        c.action(sys.argv[1], *sys.argv[3:])
+    except c.get_check_finished_exception():
+        cquit(Status(c.status), c.public, c.private)
