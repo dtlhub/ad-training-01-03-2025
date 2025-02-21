@@ -173,6 +173,7 @@ class Checker(BaseValidator):
         }
 
     def _run_command(self, command: List[str], env=None) -> Tuple[str, str]:
+        #self._log(f"[DEBUG] RUNNING: {' '.join(command)}")
         action = command[1].upper()
         cmd = ["timeout", str(self._timeout)] + command
 
@@ -182,6 +183,7 @@ class Checker(BaseValidator):
         env["PWNLIB_NOTERM"] = "1"
 
         start = time.monotonic()
+        self._log(f"[DEBUG] RUNNING: {' '.join(cmd)}")
         p = subprocess.run(cmd, capture_output=True, check=False, env=env)
         elapsed = time.monotonic() - start
 
