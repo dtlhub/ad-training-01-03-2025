@@ -7,13 +7,14 @@ services:
     ports:
       - 9091:9091
     environment:
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://valkey:6379
       USER_DATA_PATH: /data
       SECRET_KEY_PATH: /secret/secret_key
     volumes:
       - secret:/secret
+      - user_data:/data
     depends_on:
-      - redis
+      - valkey
     healthcheck:
       test: ["CMD", "pidof", "rce-as-a-service"]
       interval: 5s
@@ -27,13 +28,13 @@ services:
           cpus: "1.0"
           memory: 1G
 
-  redis:
-    image: redis:7.4.2-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+  valkey:
+    image: valkey/valkey:8.0.2-alpine
+    command: ["valkey-server", "--appendonly", "yes"]
     volumes:
-      - redis_data:/data
+      - valkey_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD", "valkey-cli", "--raw", "ping"]
       interval: 5s
       timeout: 5s
       retries: 3
@@ -62,5 +63,5 @@ services:
 
 volumes:
   user_data:
-  redis_data:
+  valkey_data:
   secret:
