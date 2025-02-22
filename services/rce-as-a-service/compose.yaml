@@ -58,7 +58,6 @@ services:
         ipv4_address: 172.43.21.3
 
   cleaner:
-    container_name: cleaner
     build: cleaner
     restart: unless-stopped
     volumes:
