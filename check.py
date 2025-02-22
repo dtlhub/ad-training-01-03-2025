@@ -51,8 +51,10 @@ CONTAINER_ALLOWED_OPTIONS = CONTAINER_REQUIRED_OPTIONS + [
     "sysctls",
     "privileged",
     "security_opt",
+    "deploy",
+    "command",
 ]
-SERVICE_REQUIRED_OPTIONS = ["pids_limit", "mem_limit", "cpus"]
+SERVICE_REQUIRED_OPTIONS = []
 SERVICE_ALLOWED_OPTIONS = CONTAINER_ALLOWED_OPTIONS
 DATABASES = [
     "redis",
@@ -262,8 +264,8 @@ class Service(BaseValidator):
         for filename in DC_ALLOWED_FILENAMES:
             dc_path = self._path / filename
             if dc_path.exists():
+                self._dc_path = dc_path
                 break
-            self._dc_path = dc_path
         else:
             self._fatal(False, f"{self._path} missing compose file")
 
@@ -342,7 +344,7 @@ class StructureValidator(BaseValidator):
 
         self._error(f.name != ".gitkeep", f"{path} found, should be named .keep")
 
-        if f.name == "docker-compose.yml":
+        if f.name in DC_ALLOWED_FILENAMES:
             with f.open() as file:
                 dc = yaml.safe_load(file)
 
