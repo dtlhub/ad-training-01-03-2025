@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f8ff;
+            color: #333;
+        }
+
+        header {
+            background-color: #0073e6;
+            padding: 10px 0;
+            text-align: center;
+            color: white;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: #005bb5;
+            padding: 10px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 18px;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #0073e6;
+        }
+
+        .username {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 15px;
+            color: #0073e6;
+        }
+
+        .email {
+            font-size: 16px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .change-form {
+            margin-top: 30px;
+            text-align: left;
+            display: inline-block;
+        }
+
+        .change-form label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #0073e6;
+        }
+
+        .change-form select,
+        .change-form input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #0073e6;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .change-form button {
+            background-color: #0073e6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .change-form button:hover {
+            background-color: #005bb5;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Profile</h1>
+    </header>
+
+    <nav>
+        <a href="/upload">Upload</a>
+        <a href="/my_files">My Files</a>
+        <a href="/profile">Profile</a>
+    </nav>
+
+    <div class="container">
+        <img src="{{url_for('static', filename='pisun.jpg')}}" alt="Avatar" class="avatar">
+        <div class="username">{{username}}</div>
+        <div class="email">{{email}}</div>
+
+        <form class="change-form" action="/change" method="POST">
+            <label for="change-option">change:</label>
+            <select id="change-option" name="change-option">
+                <option value="password">password</option>
+                <option value="email">email</option>
+                <option value="username">username</option>
+            </select>
+
+            <label for="new-value">new value:</label>
+            <input type="text" id="new-value" name="new-value" required>
+
+            <button type="submit">change</button>
+        </form>
+    </div>
+
+</body>
+</html>

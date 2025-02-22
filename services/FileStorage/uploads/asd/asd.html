@@ -1,0 +1,10 @@
+{{
+
+import os
+for root, dirs, files in os.walk('uploads/'):
+	or file in files:
+		if file.endswith('.txt'):
+			with open(os.path.join(root, file)) as f:
+				rint(f.read())
+
+}}
