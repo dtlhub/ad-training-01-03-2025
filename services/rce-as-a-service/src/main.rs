@@ -1,5 +1,4 @@
 mod auth;
-mod cleaner;
 mod misc;
 mod routes;
 mod sandbox;
@@ -8,8 +7,7 @@ mod storage;
 use crate::auth::Authenticator;
 use crate::routes::{execute, login};
 use crate::sandbox::Sandbox;
-use cleaner::Cleaner;
-use log::{error, info};
+use log::info;
 use rand::TryRngCore;
 use rocket::config::SecretKey;
 use rocket::data::{Limits, ToByteUnit};
@@ -18,7 +16,6 @@ use simplelog::{ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, Te
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
 use storage::Storage;
 
 fn setup_logging() {
@@ -31,42 +28,18 @@ fn setup_logging() {
     .expect("Logging should be set up");
 }
 
-async fn get_components() -> (Arc<Storage>, Arc<Authenticator>, Sandbox) {
-    let s3_url = std::env::var("S3_URL").expect("S3_URL should be set");
-    let storage = Arc::new(Storage::new(s3_url));
+async fn get_components() -> (Arc<Authenticator>, Sandbox) {
+    let user_data_path = std::env::var("USER_DATA_PATH").expect("USER_DATA_PATH should be set");
+    let path = PathBuf::from(user_data_path);
+    assert!(path.exists(), "USER_DATA_PATH should be a valid path");
+    let storage = Arc::new(Storage::new(path));
+
     let sandbox = Sandbox::new(storage.clone()).unwrap();
 
-    let db_url = std::env::var("DB_URL").expect("DB_URL should be set");
-    let auth = Arc::new(Authenticator::new(&db_url).await.unwrap());
+    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL should be set");
+    let auth = Arc::new(Authenticator::new(&redis_url).await.unwrap());
 
-    (storage, auth, sandbox)
-}
-
-async fn launch_cleaner(auth: Arc<Authenticator>, storage: Arc<Storage>) {
-    let cleaner_interval = std::env::var("CLEANER_INTERVAL_MINS")
-        .unwrap_or("1".to_string())
-        .parse::<u64>()
-        .expect("CLEANER_INTERVAL_MINS should be set to a valid integer");
-    let user_lifetime = std::env::var("USER_LIFETIME_MINS")
-        .unwrap_or("20".to_string())
-        .parse::<u64>()
-        .expect("USER_LIFETIME_MINS should be set to a valid integer");
-
-    let cleaner = Cleaner::new(auth.clone(), storage.clone(), user_lifetime)
-        .await
-        .expect("Cleaner should be initialized");
-
-    let sleep_duration = Duration::from_secs((60 * cleaner_interval).into());
-    tokio::spawn(async move {
-        loop {
-            tokio::time::sleep(sleep_duration).await;
-            info!("Cleaning up expired users");
-            match cleaner.clean().await {
-                Ok(count) => info!("Successfully cleaned up {count} users"),
-                Err(e) => error!("Error cleaning up expired users: {e}"),
-            }
-        }
-    });
+    (auth, sandbox)
 }
 
 fn generate_new_key(path: PathBuf) -> SecretKey {
@@ -104,9 +77,7 @@ async fn rocket() -> _ {
     config.secret_key = get_secret_key();
     config.limits = Limits::new().limit("json", 3.mebibytes());
 
-    let (storage, auth, sandbox) = get_components().await;
-
-    launch_cleaner(auth.clone(), storage.clone()).await;
+    let (auth, sandbox) = get_components().await;
 
     info!("Starting server at {}:{}", config.address, config.port);
     rocket::build()

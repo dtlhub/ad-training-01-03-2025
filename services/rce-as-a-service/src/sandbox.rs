@@ -1,8 +1,9 @@
-use crate::misc::Result;
+use crate::misc::{Error, Result};
 use crate::storage::Storage;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine as _;
 use rocket::data::ToByteUnit;
+use rocket::http::Status;
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -82,30 +83,29 @@ impl Sandbox {
         let mut dir = self.storage.setup_user_directory(user).await?;
 
         let run_wasm = self.run_wasm(wasm, args, dir.path()).await;
-
         let close_dir = dir.close().await;
 
-        match (run_wasm, close_dir) {
-            (Err(e1), _) => {
-                log::info!("Failed to run wasm for user {}: {}", user, e1);
-                Err(e1)
-            }
+        let err = match (run_wasm, close_dir) {
+            (Err(e1), _) => Err(e1.with_context(format!("Failed to run wasm for user {}", user))),
             (Ok(_), Err(e2)) => {
-                log::warn!("Failed to close user directory for user {}: {}", user, e2);
-                Err(e2)
+                Err(e2.with_context(format!("Failed to close user directory for user {}", user)))
             }
-            (Ok(wasm_result), Ok(_)) => {
-                log::info!("Wasm executed successfully for user {}", user);
-                Ok(wasm_result)
-            }
-        }
+            (Ok(wasm_result), Ok(_)) => Ok(wasm_result),
+        };
+
+        match err {
+            Ok(_) => log::info!("Successfully ran wasm for user {}", user),
+            Err(ref e) => log::info!("Failed to run wasm for user {}: {}", user, e),
+        };
+
+        err
     }
 
     async fn run_wasm(
         &self,
         wasm: &[u8],
         args: &[impl AsRef<str>],
-        host_mount: PathBuf,
+        host_mount: &PathBuf,
     ) -> Result<ExecutionResult> {
         let stdout = pipe::MemoryOutputPipe::new(64.kibibytes().as_u64() as usize);
         let stderr = pipe::MemoryOutputPipe::new(64.kibibytes().as_u64() as usize);
@@ -120,7 +120,7 @@ impl Sandbox {
             .args(real_args.leak())
             .inherit_env()
             .inherit_network()
-            .preopened_dir(&host_mount, "/", DirPerms::all(), FilePerms::all())?
+            .preopened_dir(host_mount, "/", DirPerms::all(), FilePerms::all())?
             .build();
 
         let state = ComponentState::new(wasi);
@@ -129,17 +129,25 @@ impl Sandbox {
         // store.set_fuel(1000000); ????
         // store.set_epoch_deadline(ticks_beyond_current); ???
 
-        let component = Component::from_binary(&self.engine, &wasm)?;
-        let command = Command::instantiate_async(&mut store, &component, &self.linker).await?;
+        let as_bad_request = |e: wasmtime::Error| Error::new(Status::BadRequest, e.to_string());
 
-        let result = command.wasi_cli_run().call_run(&mut store).await?;
+        let component = Component::from_binary(&self.engine, &wasm).map_err(as_bad_request)?;
+        let command = Command::instantiate_async(&mut store, &component, &self.linker)
+            .await
+            .map_err(as_bad_request)?;
+
+        let result = command
+            .wasi_cli_run()
+            .call_run(&mut store)
+            .await
+            .map_err(as_bad_request)?;
 
         match result {
             Ok(()) => Ok(ExecutionResult {
                 stdout: BASE64_STANDARD.encode(stdout.contents()),
                 stderr: BASE64_STANDARD.encode(stderr.contents()),
             }),
-            Err(()) => Err("execution failed".into()),
+            Err(()) => Err(Error::new(Status::BadRequest, "execution failed")),
         }
     }
 }

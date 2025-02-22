@@ -7,6 +7,7 @@ edition = "2021"
 base64 = "0.22.1"
 log = "0.4.25"
 rand = "0.9.0"
+redis = { version = "0.29.0", features = ["tokio-comp"] }
 rocket = { version = "0.5.1", features = ["json", "secrets"] }
 rust-s3 = { version = "0.35.1", features = ["tokio", "no-verify-ssl"] }
 serde = "1.0.217"

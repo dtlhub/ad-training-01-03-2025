@@ -1,64 +1,51 @@
-use crate::misc::Result;
-use sqlx::postgres::{PgPool, PgPoolOptions};
-use std::time::Duration;
+use crate::misc::{Error, Result};
+use redis::{AsyncCommands, Client};
+use rocket::http::Status;
 
 pub struct Authenticator {
-    pub pool: PgPool,
+    client: Client,
 }
 
 impl Authenticator {
-    pub async fn new(pg_conn_str: &str) -> Result<Self> {
-        let pool = PgPoolOptions::new()
-            .max_connections(10)
-            .idle_timeout(Duration::from_secs(60))
-            .acquire_timeout(Duration::from_secs(5))
-            .connect(pg_conn_str)
-            .await?;
-
-        Ok(Self { pool })
+    pub async fn new(redis_conn_str: &str) -> Result<Self> {
+        let client = Client::open(redis_conn_str)?;
+        Ok(Self { client })
     }
 
-    pub async fn authenticate(&self, username: &str, password: &str) -> Result<bool> {
-        let mut tx = self.pool.begin().await?;
+    fn is_valid_username(username: &str) -> bool {
+        username
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    }
 
-        let current_password =
-            sqlx::query_scalar!("SELECT password FROM users WHERE username = $1", username)
-                .fetch_optional(&mut *tx)
-                .await?;
+    fn user_password_key(username: &str) -> String {
+        format!("user:{}:password", username)
+    }
 
-        match current_password {
-            Some(value) => Ok(value.eq(password)),
-            None => {
-                sqlx::query!(
-                    "INSERT INTO users (username, password) VALUES ($1, $2)",
-                    username,
-                    password
-                )
-                .execute(&mut *tx)
-                .await?;
+    pub async fn authenticate(&self, username: &str, password: &str) -> Result<()> {
+        if !Self::is_valid_username(username) {
+            return Err(Error::new(Status::BadRequest, "invalid username"));
+        }
 
-                tx.commit().await?;
-                Ok(true)
-            }
+        let mut conn = self.client.get_multiplexed_async_connection().await?;
+
+        let current_password: String = redis::pipe()
+            .atomic()
+            .set_nx(Self::user_password_key(username), password)
+            .ignore()
+            .get(Self::user_password_key(username))
+            .query_async(&mut conn)
+            .await?;
+
+        match current_password.eq(password) {
+            true => Ok(()),
+            false => Err(Error::new(Status::Forbidden, "bad credentials")),
         }
     }
 
     pub async fn exists(&self, username: &str) -> Result<bool> {
-        let user = sqlx::query_scalar!("SELECT username FROM users WHERE username = $1", username)
-            .fetch_optional(&self.pool)
-            .await?;
-
-        Ok(user.is_some())
-    }
-
-    pub async fn remove_old_users(&self, minutes: u64) -> Result<Vec<String>> {
-        let users = sqlx::query_scalar!(
-            "DELETE FROM users WHERE created_at < NOW() - ($1 || ' minutes')::interval RETURNING username",
-            minutes.to_string()
-        )
-        .fetch_all(&self.pool)
-        .await?;
-
-        Ok(users)
+        let mut conn = self.client.get_multiplexed_async_connection().await?;
+        let result = conn.exists(Self::user_password_key(username)).await?;
+        Ok(result)
     }
 }

@@ -7,79 +7,60 @@ services:
     ports:
       - 9091:9091
     environment:
-      S3_URL: http://s3:8333
-      DB_URL: postgres://postgres:postgres@db:5432/raas
-      USER_LIFETIME_MINS: 20
-      CLEANER_INTERVAL_MINS: 1
+      REDIS_URL: redis://redis:6379
+      USER_DATA_PATH: /data
       SECRET_KEY_PATH: /secret/secret_key
     volumes:
       - secret:/secret
     depends_on:
-      - db
-      - s3
+      - redis
     healthcheck:
       test: ["CMD", "pidof", "rce-as-a-service"]
       interval: 5s
       timeout: 5s
       retries: 3
       start_period: 30s
+    restart: unless-stopped
     deploy:
-      restart_policy:
-        condition: on-failure
       resources:
         limits:
           cpus: "1.0"
           memory: 1G
 
-  s3:
-    ports:
-      - 8333:5000
-    image: jbergknoff/s3rver:latest
-    # build:
-    #   context: ./s3
-    #   dockerfile: Dockerfile
+  redis:
+    image: redis:7.4.2-alpine
+    command: ["redis-server", "--appendonly", "yes"]
     volumes:
-      - s3_data:/data
+      - redis_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8333"]
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 5s
       timeout: 5s
       retries: 3
       start_period: 60s
+    restart: unless-stopped
     deploy:
-      restart_policy:
-        condition: on-failure
       resources:
         limits:
-          cpus: "0.5"
+          cpus: "0.4"
           memory: 512M
 
-  db:
-    ports:
-      - 5432:5432
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: raas
+  cleaner:
+    image: c4tbuts4d/dedcleaner:latest
     volumes:
-      - db_data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
-      test: pg_isready -U postgres -d raas
-      interval: 5s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+      - user_data:/data
+    environment:
+      - DELETE_AFTER=20m
+      - SLEEP=1m
+      - DIRS=/data
+    restart: unless-stopped
     deploy:
-      restart_policy:
-        condition: on-failure
       resources:
         limits:
-          cpus: "0.25"
-          memory: 256M
+          cpus: "0.1"
+          memory: 128M
 
 volumes:
-  s3_data:
-  db_data:
+  user_data:
+  redis_data:
   secret:
