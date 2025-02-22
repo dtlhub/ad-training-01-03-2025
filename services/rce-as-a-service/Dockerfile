@@ -5,7 +5,6 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev
 FROM chef AS planner
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
-COPY .sqlx ./.sqlx
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
@@ -13,7 +12,6 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
-COPY .sqlx ./.sqlx
 RUN cargo build --release --bin rce-as-a-service
 
 FROM debian:bookworm AS runner
