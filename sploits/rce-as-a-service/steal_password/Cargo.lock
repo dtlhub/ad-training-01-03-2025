@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "sploiter"
+name = "steal_password"
 version = "0.1.0"

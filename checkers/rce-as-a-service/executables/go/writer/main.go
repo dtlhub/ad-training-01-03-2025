@@ -43,13 +43,15 @@ func main() {
 	// XOR first two arguments to get filename
 	filename := xorBytes(arg1, arg2)
 	if len(filename) == 0 {
-		return
+		fmt.Fprintf(os.Stderr, "Invalid filename\n")
+		os.Exit(1)
 	}
 
 	// Write decoded third argument to file
 	err = os.WriteFile(string(filename), arg3, 0644)
 	if err != nil {
-		return
+		fmt.Fprintf(os.Stderr, "Failed to write to file: %v\n", err)
+		os.Exit(1)
 	}
 
 	// XOR filename with first argument and output to stdout

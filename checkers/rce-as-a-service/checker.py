@@ -19,6 +19,9 @@ from executable_checks import (
     SimpleCheck,
     ReverserCheck,
     FileSystemCheck,
+    create_reader,
+    random_filename,
+    create_writer,
 )
 
 
@@ -43,13 +46,14 @@ class Checker(BaseChecker):
             ReverserCheck(),
             FileSystemCheck(),
         ]
-        with ThreadPoolExecutor(max_workers=len(executable_checks)) as executor:
-            list(executor.map(self.check_executable, executable_checks))
+        for check in executable_checks:
+            self.check_executable(check)
+        self.cquit(Status.OK)
 
     def check_auth(self):
         s1 = get_initialized_session()
         u, p = rnd_username(), rnd_password()
-        rsp1 = self.raas.login(s1, u, p)
+        rsp1 = self.raas.login_checked(s1, u, p)
         self.assert_eq(rsp1.status_code, 200, "Invalid status response on first login")
         self.assert_in("username", rsp1.cookies, "Cookie not set after first login")
 
@@ -59,8 +63,6 @@ class Checker(BaseChecker):
         self.assert_in("username", rsp2.cookies, "Cookie not set after second login")
 
     def check_executable(self, check: ExecutableCheck):
-        print(f"Checking {check.name}")
-
         u, p = rnd_username(), rnd_password()
 
         results = []
@@ -70,7 +72,6 @@ class Checker(BaseChecker):
             result = self.raas.execute(s, launch)
             results.append(result)
 
-        print(f"Results: {results}")
         try:
             check.check_response(results)
         except Exception:
@@ -84,6 +85,32 @@ class Checker(BaseChecker):
                     f"Traceback:\n{traceback.format_exc()}\n"
                 ),
             )
+
+    def put(self, flag_id: str, flag: str, vuln: str):
+        s = get_initialized_session()
+        u, p = rnd_username(), rnd_password()
+        self.raas.login_checked(s, u, p)
+
+        filename = random_filename()
+        launch, _, _ = create_writer(filename, flag.encode())
+        self.raas.execute(s, launch)
+
+        self.cquit(Status.OK, u, f"{u}:{p}:{filename}")
+
+    def get(self, flag_id: str, flag: str, vuln: str):
+        s = get_initialized_session()
+        u, p, filename = flag_id.split(":")
+        self.raas.login_checked(s, u, p)
+
+        launch = create_reader(filename)
+        response = self.raas.execute(s, launch, Status.CORRUPT)
+        self.assert_eq(
+            response.stdout.strip().decode(),
+            flag,
+            "Invalid flag",
+            Status.CORRUPT,
+        )
+        self.cquit(Status.OK)
 
 
 if __name__ == "__main__":

@@ -8,11 +8,11 @@ services:
       - 9091:9091
     environment:
       REDIS_URL: redis://valkey:6379
-      USER_DATA_PATH: /data
+      USER_DATA_PATH: /user_data
       SECRET_KEY_PATH: /secret/secret_key
     volumes:
       - secret:/secret
-      - user_data:/data
+      - user_data:/user_data
     depends_on:
       - valkey
     healthcheck:
@@ -25,11 +25,19 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: "2.0"
           memory: 1G
+        reservations:
+          cpus: "2.0"
+          memory: "512M"
+    networks:
+      raasnet:
+        ipv4_address: 172.43.21.2
 
   valkey:
     image: valkey/valkey:8.0.2-alpine
+    ports:
+      - 6379:6379
     command: ["valkey-server", "--appendonly", "yes"]
     volumes:
       - valkey_data:/data
@@ -43,18 +51,18 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.4"
-          memory: 512M
+          cpus: "0.2"
+          memory: 256M
+    networks:
+      raasnet:
+        ipv4_address: 172.43.21.3
 
   cleaner:
-    image: c4tbuts4d/dedcleaner:latest
-    volumes:
-      - user_data:/data
-    environment:
-      - DELETE_AFTER=20m
-      - SLEEP=1m
-      - DIRS=/data
+    container_name: cleaner
+    build: cleaner
     restart: unless-stopped
+    volumes:
+      - user_data:/user_data
     deploy:
       resources:
         limits:
@@ -65,3 +73,11 @@ volumes:
   user_data:
   valkey_data:
   secret:
+
+networks:
+  raasnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.43.21.0/24
+          gateway: 172.43.21.1

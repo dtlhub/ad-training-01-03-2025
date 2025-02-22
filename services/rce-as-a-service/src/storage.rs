@@ -59,18 +59,30 @@ impl Directory {
         let mut bytes_left = self.bytes_quota;
 
         while let Some(entry) = dir.next_entry().await? {
-            if entry.file_type().await?.is_file() {
+            let file_type = entry.file_type().await?;
+            if file_type.is_file() {
                 let metadata = entry.metadata().await?;
                 let size = metadata.len();
 
                 if size > bytes_left || files_left == 0 {
+                    log::info!(
+                        "Deleting file exceeding quota (Size: {}, BytesLeft: {}, FilesLeft: {}): {}",
+                        size,
+                        bytes_left,
+                        files_left,
+                        entry.path().display()
+                    );
+                    tokio::fs::remove_file(entry.path()).await?;
+                } else {
                     bytes_left -= size;
                     files_left -= 1;
-                } else {
-                    tokio::fs::remove_file(entry.path()).await?;
                 }
-            } else {
+            } else if file_type.is_dir() {
+                log::info!("Deleting directory: {}", entry.path().display());
                 tokio::fs::remove_dir_all(entry.path()).await?;
+            } else {
+                log::info!("Deleting unknown entry: {}", entry.path().display());
+                tokio::fs::remove_file(entry.path()).await?;
             }
         }
         Ok(())

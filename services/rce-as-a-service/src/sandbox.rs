@@ -60,8 +60,7 @@ impl Sandbox {
     pub fn new(storage: Arc<Storage>) -> Result<Self> {
         let mut config = wasmtime::Config::new();
         config.async_support(true);
-        // config.consume_fuel(true); ???
-        // config.epoch_interruption(true); ???
+        config.consume_fuel(true);
 
         let engine = Engine::new(&config)?;
         let mut linker = Linker::new(&engine);
@@ -82,20 +81,32 @@ impl Sandbox {
     ) -> Result<ExecutionResult> {
         let mut dir = self.storage.setup_user_directory(user).await?;
 
+        let start_time = std::time::Instant::now();
         let run_wasm = self.run_wasm(wasm, args, dir.path()).await;
+        let execution_time = start_time.elapsed();
+
         let close_dir = dir.close().await;
 
         let err = match (run_wasm, close_dir) {
-            (Err(e1), _) => Err(e1.with_context(format!("Failed to run wasm for user {}", user))),
+            (Err(e1), _) => Err(e1.with_context(format!("execute code from user {}", user))),
             (Ok(_), Err(e2)) => {
-                Err(e2.with_context(format!("Failed to close user directory for user {}", user)))
+                Err(e2.with_context(format!("close user directory for user {}", user)))
             }
             (Ok(wasm_result), Ok(_)) => Ok(wasm_result),
         };
 
         match err {
-            Ok(_) => log::info!("Successfully ran wasm for user {}", user),
-            Err(ref e) => log::info!("Failed to run wasm for user {}: {}", user, e),
+            Ok(_) => log::info!(
+                "Successfully executed code from user {} (TimeElapsed: {:?})",
+                user,
+                execution_time
+            ),
+            Err(ref e) => log::info!(
+                "Error executing code from user {} (TimeElapsed: {:?}): {}",
+                user,
+                execution_time,
+                e
+            ),
         };
 
         err
@@ -126,8 +137,7 @@ impl Sandbox {
         let state = ComponentState::new(wasi);
         let mut store = Store::new(&self.engine, state);
         store.limiter(|state| &mut state.limits);
-        // store.set_fuel(1000000); ????
-        // store.set_epoch_deadline(ticks_beyond_current); ???
+        store.set_fuel(1_000_000)?;
 
         let as_bad_request = |e: wasmtime::Error| Error::new(Status::BadRequest, e.to_string());
 

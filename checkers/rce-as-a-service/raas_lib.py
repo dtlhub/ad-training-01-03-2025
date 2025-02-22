@@ -1,6 +1,6 @@
 import requests
 
-from checklib import BaseChecker
+from checklib import BaseChecker, Status
 
 from executable_checks import Launch, ExecutionResult
 
@@ -20,10 +20,7 @@ class RaasApi:
         self, session: requests.Session, username: str, password: str
     ) -> requests.Response:
         response = self.login(session, username, password)
-        self.c.assert_in("username", session.cookies, "Cookie not set after login")
-
-        err = f"Invalid status response on login: {response.status_code}"
-        self.c.assert_eq(response.status_code, 200, err)
+        self.check_return_code(response, 200, "Invalid status response on login")
         self.c.assert_in("username", response.cookies, "Cookie not set after login")
 
         return response
@@ -34,13 +31,45 @@ class RaasApi:
             json={"username": username, "password": password},
         )
 
-    def execute(self, session: requests.Session, launch: Launch) -> ExecutionResult:
+    def execute(
+        self,
+        session: requests.Session,
+        launch: Launch,
+        status: Status = Status.MUMBLE,
+    ) -> ExecutionResult:
         response = session.post(
             f"{self.url}/api/execute",
             json=launch.to_json(),
         )
-        print(f"Response: {response.content}")
-        self.c.assert_eq(
-            response.status_code, 200, "Invalid status response on execute"
-        )
-        return ExecutionResult.from_response(response)
+
+        if response.status_code != 200:
+            self.c.cquit(
+                status,
+                "Unable to perform RCE",
+                (
+                    f"Failed to run executable {launch.executable}:\n"
+                    f"Status code: {response.status_code}\n"
+                    f"Response: {response.content}"
+                ),
+            )
+
+        try:
+            parsed = ExecutionResult.from_response(response)
+        except Exception:
+            self.c.cquit(
+                status,
+                "Unable to parse response",
+                f"Response: {response.content}",
+            )
+
+        return parsed
+
+    def check_return_code(
+        self, response: requests.Response, expected_code: int, public_message: str
+    ):
+        if response.status_code != expected_code:
+            self.c.cquit(
+                Status.MUMBLE,
+                public_message,
+                f"Expected status code {expected_code}, got {response.status_code}: {response.content}",
+            )

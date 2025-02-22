@@ -29,7 +29,7 @@ impl Authenticator {
 
         let mut conn = self.client.get_multiplexed_async_connection().await?;
 
-        let current_password: String = redis::pipe()
+        let (current_password,): (String,) = redis::pipe()
             .atomic()
             .set_nx(Self::user_password_key(username), password)
             .ignore()

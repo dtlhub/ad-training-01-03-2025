@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 import base64
+import os
 import random
 import string
 from dataclasses import dataclass
@@ -8,11 +9,20 @@ import requests
 from checklib import rnd_string
 
 
+def wasm_path(filename: str) -> str:
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    return f"{base_path}/executables/wasm/{filename}"
+
+
 def binaries_from_langs(base_name: str, langs: list[str]) -> list[str]:
-    return [f"executables/wasm/{base_name}-{lang}.wasm" for lang in langs]
+    return [wasm_path(f"{base_name}-{lang}.wasm") for lang in langs]
 
 
-ALL_LANGUAGES = ["c"]
+ALL_LANGUAGES = [
+    "c",
+    "go",
+    "rust",
+]
 
 
 @dataclass
@@ -96,6 +106,14 @@ def xor(a: bytes, b: bytes) -> bytes:
     return bytes(x ^ y for x, y in zip(a, b))
 
 
+def random_filename() -> str:
+    return (
+        rnd_string(random.randint(10, 30))
+        + "."
+        + "".join(random.choices(string.ascii_lowercase, k=random.randint(1, 3)))
+    )
+
+
 def create_writer(filename: str, content: bytes) -> tuple[Launch, bytes, bytes]:
     padding = bytes(random.randint(0, 255) for _ in range(random.randint(0, 20)))
     first = bytes(random.randint(0, 255) for _ in range(len(filename)))
@@ -103,12 +121,12 @@ def create_writer(filename: str, content: bytes) -> tuple[Launch, bytes, bytes]:
     if random.random() < 0.5:
         first, second = second, first
 
-    binary = random.choice(binaries_from_langs("writer", ALL_LANGUAGES))
+    binary = random.choice(binaries_from_langs("writer", ["c", "rust"]))
     return Launch([first.hex(), second.hex(), content.hex()], binary), first, second
 
 
 def create_reader(filename: str) -> Launch:
-    binary = random.choice(binaries_from_langs("reader", ALL_LANGUAGES))
+    binary = random.choice(binaries_from_langs("reader", ["c", "rust"]))
     return Launch([filename], binary)
 
 
@@ -116,11 +134,7 @@ class FileSystemCheck(ExecutableCheck):
     name = "filesystem"
 
     def __init__(self):
-        self.filename = (
-            rnd_string(random.randint(10, 100))
-            + "."
-            + rnd_string(random.randint(2, 4), string.ascii_lowercase)
-        )
+        self.filename = random_filename()
         self.content = bytes(
             random.randint(0, 255) for _ in range(random.randint(10, 100))
         )

@@ -30,4 +30,4 @@ WORKDIR /build
 ENV GOOS=wasip2
 ENV GOARCH=wasm
 
-ENTRYPOINT ["tinygo", "build", "-target", "wasip2", "-o", "/out/output.wasm"]
+ENTRYPOINT ["tinygo", "build", "-target", "wasip2", "-opt=2", "-gc=leaking", "-scheduler=none", "-o", "/out/output.wasm"]
