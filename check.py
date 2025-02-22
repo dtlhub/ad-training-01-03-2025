@@ -30,7 +30,7 @@ OUT_LOCK = Lock()
 DISABLE_LOG = False
 
 DC_REQUIRED_OPTIONS = ["services"]
-DC_ALLOWED_OPTIONS = DC_REQUIRED_OPTIONS + ["volumes", "version"]
+DC_ALLOWED_OPTIONS = DC_REQUIRED_OPTIONS + ["volumes", "version", "networks"]
 DC_ALLOWED_FILENAMES = [
     f"{base}.{ext}" for base in ["docker-compose", "compose"] for ext in ["yaml", "yml"]
 ]
@@ -53,6 +53,7 @@ CONTAINER_ALLOWED_OPTIONS = CONTAINER_REQUIRED_OPTIONS + [
     "security_opt",
     "deploy",
     "command",
+    "networks",
 ]
 SERVICE_REQUIRED_OPTIONS = []
 SERVICE_ALLOWED_OPTIONS = CONTAINER_ALLOWED_OPTIONS
