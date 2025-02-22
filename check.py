@@ -31,6 +31,9 @@ DISABLE_LOG = False
 
 DC_REQUIRED_OPTIONS = ["services"]
 DC_ALLOWED_OPTIONS = DC_REQUIRED_OPTIONS + ["volumes", "version"]
+DC_ALLOWED_FILENAMES = [
+    f"{base}.{ext}" for base in ["docker-compose", "compose"] for ext in ["yaml", "yml"]
+]
 
 CONTAINER_REQUIRED_OPTIONS = ["restart"]
 CONTAINER_ALLOWED_OPTIONS = CONTAINER_REQUIRED_OPTIONS + [
@@ -76,12 +79,14 @@ ALLOWED_CHECKER_PATTERNS = [
     "resp: requests.Response",
     "Got requests connection error",
 ]
-FORBIDDEN_CHECKER_PATTERNS = ["requests"]
+FORBIDDEN_CHECKER_PATTERNS = []
 
 ALLOWED_YAML_FILES = [
     "buf.yaml",
     "buf.gen.yaml",
     "application.yaml",
+    "docker-compose.yaml",
+    "compose.yaml",
 ]
 
 
@@ -253,11 +258,14 @@ class Service(BaseValidator):
     def __init__(self, name: str):
         self._name = name
         self._path = SERVICES_PATH / self._name
-        self._dc_path = self._path / "docker-compose.yml"
-        self._fatal(
-            self._dc_path.exists(),
-            f"{self._dc_path.relative_to(BASE_DIR)} missing",
-        )
+
+        for filename in DC_ALLOWED_FILENAMES:
+            dc_path = self._path / filename
+            if dc_path.exists():
+                break
+            self._dc_path = dc_path
+        else:
+            self._fatal(False, f"{self._path} missing compose file")
 
         self._checker = Checker(self._name)
 
@@ -586,7 +594,7 @@ def dump_tasks(_args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Validate checkers for A&D. "
-                    "Host & number of runs are passed with HOST and RUNS env vars"
+        "Host & number of runs are passed with HOST and RUNS env vars"
     )
     subparsers = parser.add_subparsers()
 
