@@ -8,6 +8,7 @@ COPY ./server.sh /
 COPY chall ./task/chall
 COPY libvtable.so ./task/libvtable.so
 COPY banana.jpg ./task/banana.jpg
+RUN chmod +x /server.sh
 
 EXPOSE 1337
 ENTRYPOINT /server.sh
