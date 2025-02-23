@@ -53,14 +53,10 @@ class Checker(BaseChecker):
     def check_auth(self):
         s1 = get_initialized_session()
         u, p = rnd_username(), rnd_password()
-        rsp1 = self.raas.login_checked(s1, u, p)
-        self.assert_eq(rsp1.status_code, 200, "Invalid status response on first login")
-        self.assert_in("username", rsp1.cookies, "Cookie not set after first login")
+        self.raas.login(s1, u, p)
 
         s2 = get_initialized_session()
-        rsp2 = self.raas.login(s2, u, p)
-        self.assert_eq(rsp2.status_code, 200, "Invalid status response on second login")
-        self.assert_in("username", rsp2.cookies, "Cookie not set after second login")
+        self.raas.login(s2, u, p)
 
     def check_executable(self, check: ExecutableCheck):
         u, p = rnd_username(), rnd_password()
@@ -68,7 +64,7 @@ class Checker(BaseChecker):
         results = []
         for launch in check.get_launches():
             s = get_initialized_session()
-            self.raas.login_checked(s, u, p)
+            self.raas.login(s, u, p)
             result = self.raas.execute(s, launch)
             results.append(result)
 
@@ -89,7 +85,7 @@ class Checker(BaseChecker):
     def put(self, flag_id: str, flag: str, vuln: str):
         s = get_initialized_session()
         u, p = rnd_username(), rnd_password()
-        self.raas.login_checked(s, u, p)
+        self.raas.login(s, u, p)
 
         filename = random_filename()
         launch, _, _ = create_writer(filename, flag.encode())
@@ -100,7 +96,7 @@ class Checker(BaseChecker):
     def get(self, flag_id: str, flag: str, vuln: str):
         s = get_initialized_session()
         u, p, filename = flag_id.split(":")
-        self.raas.login_checked(s, u, p)
+        self.raas.login(s, u, p)
 
         launch = create_reader(filename)
         response = self.raas.execute(s, launch, Status.CORRUPT)

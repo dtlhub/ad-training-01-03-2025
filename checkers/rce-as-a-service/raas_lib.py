@@ -16,20 +16,16 @@ class RaasApi:
         self.c = checker
         self.port = self.PORT
 
-    def login_checked(
+    def login(
         self, session: requests.Session, username: str, password: str
     ) -> requests.Response:
-        response = self.login(session, username, password)
-        self.check_return_code(response, 200, "Invalid status response on login")
-        self.c.assert_in("username", response.cookies, "Cookie not set after login")
-
-        return response
-
-    def login(self, session: requests.Session, username: str, password: str):
-        return session.post(
+        response = session.post(
             f"{self.url}/api/login",
             json={"username": username, "password": password},
         )
+        self.check_return_code(response, 200, "Invalid status response on login")
+        self.c.assert_in("username", response.cookies, "Cookie not set after login")
+        return response
 
     def execute(
         self,
