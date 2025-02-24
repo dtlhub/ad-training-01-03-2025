@@ -40,8 +40,10 @@ def register(username, email, password):
 	hashed_password = sha256(password.encode('utf-8')).hexdigest()
 	cursor.execute('REPLACE INTO users (username, email, hashed_password) VALUES (?, ?, ?)', (username, email, hashed_password))
 	connection.commit()
+	cursor.execute('SELECT id FROM users WHERE username = ?', (username,))
+	result = cursor.fetchone()
 	connection.close()
-	return username
+	return result[0]
 
 def get_username(id):
 	connection = sqlite3.connect('./db.db')
@@ -99,6 +101,7 @@ def change(change_option, value, user_id):
 	cursor = connection.cursor()
 	if change_option == "password":
 		value = sha256(value.encode('utf-8')).hexdigest()
+		change_option = "hashed_password"
 	cursor.execute(f'UPDATE users SET {change_option} = ? WHERE id = ?', (value, user_id))
 	connection.commit()
 	return 0
