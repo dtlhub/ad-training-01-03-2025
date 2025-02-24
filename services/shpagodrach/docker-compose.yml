@@ -7,3 +7,15 @@ services:
     pids_limit: 512
     mem_limit: 4096M
     cpus: 1.0
+    volumes:
+      - "./gladiators:/tmp/gladiators"
+
+  cleaner:
+    image: c4tbuts4d/dedcleaner:latest
+    restart: unless-stopped
+    volumes:
+      - "./gladiators:/tmp/gladiators"
+    environment:
+      - DELETE_AFTER=15m
+      - SLEEP=15m
+      - DIRS=/tmp/gladiators
