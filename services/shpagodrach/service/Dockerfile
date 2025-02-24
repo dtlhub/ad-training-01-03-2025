@@ -10,5 +10,8 @@ COPY libvtable.so ./task/libvtable.so
 COPY banana.jpg ./task/banana.jpg
 RUN chmod +x /server.sh
 
+RUN chmod +x ./task/chall
+ENV LD_LIBRARY_PATH=./task
+
 EXPOSE 1337
 ENTRYPOINT /server.sh
