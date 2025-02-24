@@ -99,7 +99,8 @@ void* monitor_banana(void* arg) {
              if (event->len > 0) {
                  if (strcmp(event->name, BANANA_FILE) == 0) {
                      if (event->mask & (IN_DELETE | IN_MOVED_FROM)) {
-                         exit(1);
+                        printf("NO BANANA!\n"); 
+                        //exit(1);
                      }
                  }
              }
@@ -418,7 +419,8 @@ void banner() {
 
 int main() {
     if (verify_banana() != 0) {
-        exit(1);
+        printf("NO BANAN! AT START!\n");
+        //exit(1);
     }
 
     pthread_t tid;
