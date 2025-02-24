@@ -7,3 +7,15 @@ services:
     pids_limit: 256
     mem_limit: 128M
     cpus: 0.5
+    volumes:
+      - "./tmp:/tmp"
+
+    cleaner:
+      image: c4tbuts4d/dedcleaner:latest
+      restart: unless-stopped
+      volumes:
+        - "./tmp:/tmp"
+      environment:
+        - DELETE_AFTER=15m
+        - SLEEP=15m
+        - DIRS=/tmp

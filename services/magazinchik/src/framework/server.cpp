@@ -10,9 +10,15 @@
 #include <thread>
 #include <vector>
 #include <mutex>
+#include <algorithm>
+#include <condition_variable>
+#include <queue>
 
 namespace framework {
-    std::mutex client_mutex;
+    std::mutex queue_mutex;
+    std::condition_variable condition;
+    std::queue<int> client_queue;
+    bool stop_server = false;
 
     std::string read_socket_data(int client_socket) {
         char buffer[4096];
@@ -40,7 +46,6 @@ namespace framework {
     }
 
     void handle_client(int client_socket) {
-        std::lock_guard<std::mutex> lock(client_mutex);
         std::string raw_request = read_socket_data(client_socket);
         parser::Request req = parser::parse_request(raw_request);
         auto handler = router::find_route(req.method, req.path);
@@ -60,7 +65,26 @@ namespace framework {
         close(client_socket);
     }
 
-    void run(int port) {
+    void worker_thread() {
+        while (true) {
+            int client_socket;
+            {
+                std::unique_lock<std::mutex> lock(queue_mutex);
+                condition.wait(lock, [] { return !client_queue.empty() || stop_server; });
+
+                if (stop_server && client_queue.empty()) {
+                    return;
+                }
+
+                client_socket = client_queue.front();
+                client_queue.pop();
+            }
+
+            handle_client(client_socket);
+        }
+    }
+
+    void run(int port, size_t thread_pool_size = 4) {
         int server_fd;
         struct sockaddr_in address;
         int opt = 1;
@@ -92,7 +116,10 @@ namespace framework {
 
         std::cout << "[RUNNING] Сервер запущен на порту " << port << "\n";
 
-        std::vector<std::thread> threads;
+        std::vector<std::thread> pool;
+        for (size_t i = 0; i < thread_pool_size; ++i) {
+            pool.emplace_back(worker_thread);
+        }
 
         while (true) {
             int new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
@@ -101,11 +128,24 @@ namespace framework {
                 continue;
             }
 
-            threads.emplace_back(handle_client, new_socket);
+            {
+                std::unique_lock<std::mutex> lock(queue_mutex);
+                client_queue.push(new_socket);
+            }
+            condition.notify_one();
         }
 
-        for (auto& th : threads) {
+        // Остановка сервера
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            stop_server = true;
+        }
+        condition.notify_all();
+
+        for (auto& th : pool) {
             if (th.joinable()) th.join();
         }
+
+        close(server_fd);
     }
 }
