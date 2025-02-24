@@ -36,6 +36,7 @@ class PwnCheckMachine:
 
     def create_gladiator(self, io, name, password, comment):
         dbg(f"create:{name}")
+        dbg(io.recv(2048))
         io.sendlineafter(b"> ", b"1")
         dbg("send 1")
         io.sendlineafter(b"Enter name (login): ", name.encode())
