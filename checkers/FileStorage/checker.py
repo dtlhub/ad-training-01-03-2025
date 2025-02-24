@@ -13,17 +13,18 @@ from checklib.checker import CheckFinished
 
 PORT = 5000
 
+
 class CheckMachine:
     @property
     def url(self):
-        return f'http://{self.c.host}:{self.port}'
+        return f"http://{self.c.host}:{self.port}"
 
     def __init__(self, checker: BaseChecker):
         self.c = checker
         self.port = PORT
 
     def register(self, session: requests.Session, username: str, password: str):
-        url = f'{self.url}/register'
+        url = f"{self.url}/register"
         data = {
             "username": username,
             "password": password,
@@ -34,8 +35,10 @@ class CheckMachine:
 
         self.login(session, username, password, Status.MUMBLE)
 
-    def login(self, session: requests.Session, username: str, password: str, status: Status):
-        url = f'{self.url}/login'
+    def login(
+        self, session: requests.Session, username: str, password: str, status: Status
+    ):
+        url = f"{self.url}/login"
         data = {
             "username": username,
             "password": password,
@@ -45,16 +48,18 @@ class CheckMachine:
         self.c.assert_eq(response.status_code, 200, "Failed to login", status)
 
     def put_file(self, session: requests.Session, data: str):
-        url = f'{self.url}/upload'
+        url = f"{self.url}/upload"
         response = session.post(url, files={"file": ("flag.txt", data)})
         self.c.assert_eq(response.status_code, 302, "Failed to put file")
 
     def get_file(self, session: requests.Session, status: Status) -> str:
-        url = f'{self.url}/my_files'
+        url = f"{self.url}/my_files"
         response = session.get(url)
         soup = BeautifulSoup(response.text, "html.parser")
-        files = soup.select('ul.file-list a')
-        found_file = next((file["href"] for file in files if "flag.txt" in file.text), None)
+        files = soup.select("ul.file-list a")
+        found_file = next(
+            (file["href"] for file in files if "flag.txt" in file.text), None
+        )
         if found_file:
             result = s.get(f"{self.url}{found_file}").text
         else:
@@ -66,9 +71,11 @@ class CheckMachine:
 def rnd_integer(min_value: int, max_value: int) -> int:
     return random.randint(min_value, max_value)
 
+
 def generate_flag(length=31):
     chars = string.ascii_uppercase + string.digits
-    return ''.join(random.choices(chars, k=length))+'='
+    return "".join(random.choices(chars, k=length)) + "="
+
 
 class Checker(BaseChecker):
     vulns: int = 1
@@ -81,7 +88,7 @@ class Checker(BaseChecker):
         self.password = "static_pass"
         self.mch = CheckMachine(self)
 
-    def cquit(self, status, public='', private=''):
+    def cquit(self, status, public="", private=""):
         if status == Status.OK:
             print(public)
             sys.exit(101)
@@ -93,10 +100,18 @@ class Checker(BaseChecker):
         try:
             super(Checker, self).action(action, *args, **kwargs)
         except requests.exceptions.ConnectionError as e:
-            self.cquit(Status.DOWN, 'Connection error', f'Got requests connection error: {str(e)}')
+            self.cquit(
+                Status.DOWN,
+                "Connection error",
+                f"Got requests connection error: {str(e)}",
+            )
         except Exception as e:
             error_traceback = traceback.format_exc()
-            self.cquit(Status.DOWN, 'Unexpected error', f'Unexpected error: {str(e)}\nTraceback:\n{error_traceback}')
+            self.cquit(
+                Status.DOWN,
+                "Unexpected error",
+                f"Unexpected error: {str(e)}\nTraceback:\n{error_traceback}",
+            )
 
     def check(self):
         try:
@@ -113,27 +128,20 @@ class Checker(BaseChecker):
 
             orders = self.mch.get_order(session, Status.MUMBLE)
             self.assert_in(order_name, orders, "Order not found in the list")
-            self.assert_in(order_description, orders, "Order description not found in the list")
+            self.assert_in(
+                order_description, orders, "Order description not found in the list"
+            )
 
             self.cquit(Status.OK)
         except CheckFinished:
             raise
         except Exception as e:
             error_traceback = traceback.format_exc()
-            self.cquit(Status.DOWN, 'Unexpected error', f'Unexpected error in check: {str(e)}\nTraceback:\n{error_traceback}')
-
-    def info(self):
-        info = {
-            "actions": [
-                {"name": "check", "usage": "checker.py check <ip>"},
-                {"name": "put", "usage": "checker.py put <ip> <flag_id> <flag>"},
-                {"name": "get", "usage": "checker.py get <ip> <login:password> <flag>"}
-            ],
-            "timeout": 5,
-            "attack_data": True,
-        }
-        print(json.dumps(info, indent=4))
-        sys.exit(101)
+            self.cquit(
+                Status.DOWN,
+                "Unexpected error",
+                f"Unexpected error in check: {str(e)}\nTraceback:\n{error_traceback}",
+            )
 
     def put(self, flag_id: str, flag: str):
         session = get_initialized_session()
@@ -156,16 +164,16 @@ class Checker(BaseChecker):
         orders = self.mch.get_order(session, Status.CORRUPT)
 
         self.assert_in(flag_id, orders, "Order not found in the list", Status.CORRUPT)
-        self.assert_in(flag, orders, "Flag not found in the order description", Status.CORRUPT)
+        self.assert_in(
+            flag, orders, "Flag not found in the order description", Status.CORRUPT
+        )
 
         self.cquit(Status.OK)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     c = Checker(sys.argv[2])
     try:
-        if sys.argv[1] == "info":
-            c.info()
-        else:
-            c.action(sys.argv[1], *sys.argv[3:])
+        c.action(sys.argv[1], *sys.argv[3:])
     except c.get_check_finished_exception():
         cquit(Status(c.status), c.public, c.private)
