@@ -115,7 +115,7 @@ namespace order{
     bool has_bought_order(const std::string& username, const std::string& order_name) {
         std::ifstream bought_in(BOUGHT_ORDERS);
         if (!bought_in.is_open()) {
-            std::cerr << "[ERROR] Couldn't open bought orders file for reading" << std::endl;
+            std::cerr << "[INFO] Couldn't open bought orders file for reading" << std::endl;
             return false;
         }
 

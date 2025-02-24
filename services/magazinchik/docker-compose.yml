@@ -5,5 +5,5 @@ services:
       - "8080:8080"
     restart: unless-stopped
     pids_limit: 256
-    mem_limit: 1g
-    cpus: 1
+    mem_limit: 128M
+    cpus: 0.5
