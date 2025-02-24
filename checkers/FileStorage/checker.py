@@ -27,30 +27,27 @@ class CheckMachine:
         url = f"{self.url}/register"
         data = {
             "username": username,
+            "email": "asd@asd",
             "password": password,
         }
         response = session.post(url, data=data)
-
+        print(f"[+] NEW USER REGISTERED: {username}:{password}")
         self.c.assert_eq(response.status_code, 200, "Failed to register user")
 
-        self.login(session, username, password, Status.MUMBLE)
-
-    def login(
-        self, session: requests.Session, username: str, password: str, status: Status
-    ):
+    def login(self, session: requests.Session, username: str, password: str, status: Status):
         url = f"{self.url}/login"
         data = {
             "username": username,
             "password": password,
         }
         response = session.post(url, data=data)
-
+        #print(f"[+] NEW USER AUTORISED: {username}:{password}")
         self.c.assert_eq(response.status_code, 200, "Failed to login", status)
 
     def put_file(self, session: requests.Session, data: str):
         url = f"{self.url}/upload"
         response = session.post(url, files={"file": ("flag.txt", data)})
-        self.c.assert_eq(response.status_code, 302, "Failed to put file")
+        self.c.assert_eq(response.status_code, 200, "Failed to put file")
 
     def get_file(self, session: requests.Session, status: Status) -> str:
         url = f"{self.url}/my_files"
@@ -61,7 +58,7 @@ class CheckMachine:
             (file["href"] for file in files if "flag.txt" in file.text), None
         )
         if found_file:
-            result = s.get(f"{self.url}{found_file}").text
+            result = session.get(f"{self.url}{found_file}").text
         else:
             result = False
         self.c.assert_eq(response.status_code, 200, "Failed to get file", status)
@@ -118,18 +115,15 @@ class Checker(BaseChecker):
             session = get_initialized_session()
             username, password = rnd_username(), rnd_password()
 
-            order_name = rnd_string(10)
-            order_description = generate_flag()
-            order_price = rnd_integer(100, 1000)
+            data = generate_flag()
 
             self.mch.register(session, username, password)
-            self.mch.login(session, username, password, Status.MUMBLE)
-            self.mch.create_order(session, order_name, order_description, order_price)
+            self.mch.put_file(session, data)
 
-            orders = self.mch.get_order(session, Status.MUMBLE)
-            self.assert_in(order_name, orders, "Order not found in the list")
+            orders = self.mch.get_file(session, Status.MUMBLE)
+            self.assert_in(data, orders, "file not found in the list")
             self.assert_in(
-                order_description, orders, "Order description not found in the list"
+                data, orders, "file hasn't got flag"
             )
 
             self.cquit(Status.OK)
@@ -143,25 +137,24 @@ class Checker(BaseChecker):
                 f"Unexpected error in check: {str(e)}\nTraceback:\n{error_traceback}",
             )
 
-    def put(self, flag_id: str, flag: str):
+    def put(self, flag_id: str, flag: str, vuln: str):
         session = get_initialized_session()
 
-        data = flag
+        username = rnd_username()
+        password = rnd_password()
 
-        try:
-            self.mch.register(session, self.username, self.password)
-        except AssertionError:
-            pass
+        self.mch.register(session, username, password)
+        self.mch.put_file(session, flag)
+        self.cquit(Status.OK, username, f"{username}:{password}")
 
-        self.mch.put_file(session, data)
-
-        self.cquit(Status.OK)
-
-    def get(self, flag_id: str, flag: str):
+    def get(self, flag_id: str, flag: str, vuln: str):
+        print("start get")
         session = get_initialized_session()
 
-        self.mch.login(session, self.username, self.password, Status.CORRUPT)
-        orders = self.mch.get_order(session, Status.CORRUPT)
+        username, password = flag_id.split(':')
+
+        self.mch.login(session, username, password, Status.CORRUPT)
+        orders = self.mch.get_file(session, Status.CORRUPT)
 
         self.assert_in(flag_id, orders, "Order not found in the list", Status.CORRUPT)
         self.assert_in(
