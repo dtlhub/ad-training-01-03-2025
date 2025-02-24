@@ -1,1 +1,3 @@
 checklib
+bs4
+requests
