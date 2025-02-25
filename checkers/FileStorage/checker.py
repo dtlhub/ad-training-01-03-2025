@@ -95,26 +95,18 @@ class Checker(BaseChecker):
         super(Checker, self).__init__(*args, **kwargs)
         self.mch = CheckMachine(self)
 
-    def cquit(self, status, public="", private=""):
-        if status == Status.OK:
-            print(public)
-            sys.exit(101)
-        else:
-            print(private, file=sys.stderr)
-            sys.exit(104)
-
     def action(self, action, *args, **kwargs):
         try:
             super(Checker, self).action(action, *args, **kwargs)
         except requests.exceptions.ConnectionError as e:
-            self.cquit(
+            cquit(
                 Status.DOWN,
                 "Connection error",
                 f"Got requests connection error: {str(e)}",
             )
         except Exception as e:
             error_traceback = traceback.format_exc()
-            self.cquit(
+            cquit(
                 Status.DOWN,
                 "Unexpected error",
                 f"Unexpected error: {str(e)}\nTraceback:\n{error_traceback}",
@@ -130,7 +122,7 @@ class Checker(BaseChecker):
             ],
             "vulns": self.vulns,
             "timeout": 5,
-            "attack_data": False,
+            "attack_data": True
         }
         print(json.dumps(info, indent=4))
         sys.exit(101)
@@ -150,12 +142,12 @@ class Checker(BaseChecker):
             #print(f"[+] DATA: {data}, FLAG: {flag}")
             self.assert_in(data, flag, "no flag :(")
 
-            self.cquit(Status.OK)
+            cquit(Status.OK)
         except CheckFinished:
             raise
         except Exception as e:
             error_traceback = traceback.format_exc()
-            self.cquit(
+            cquit(
                 Status.DOWN,
                 "Unexpected error",
                 f"Unexpected error in check: {str(e)}\nTraceback:\n{error_traceback}",
@@ -174,7 +166,7 @@ class Checker(BaseChecker):
         self.mch.register(session, username, password)
         self.mch.put_file(session, flag)
         #print("[+] END OF func put()")
-        self.cquit(Status.OK, f"{username}:{password}", f"{username}:{password}")
+        cquit(Status.OK, username, f"{username}:{password}")
 
     def get(self, flag_id: str, flag: str, vuln: str):
         #print("[+] stage 3")
@@ -192,7 +184,7 @@ class Checker(BaseChecker):
             flag, orders, "Flag not found in the order description", Status.CORRUPT
         )
 
-        self.cquit(Status.OK)
+        cquit(Status.OK)
 
 
 if __name__ == "__main__":
