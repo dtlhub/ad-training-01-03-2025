@@ -18,9 +18,10 @@ def index():
 		return redirect(url_for('my_files'))
 	return redirect(url_for('login'))
 
-@app.route('/getfile<int:file_id>', methods=["GET"])
-def getfile(file_id):
+@app.route('/getfile', methods=["GET"])
+def getfile():
 	if 'user_id' in session:
+		file_id = int(request.args.get("id"))
 		file_path = db.get_filepath(file_id)
 		if os.path.isfile(file_path):
 			return send_file(file_path, as_attachment=True)
@@ -84,6 +85,13 @@ def change():
 		value = Markup(request.form.get("new-value"))
 		db.change(change_option, value, session["user_id"])
 		return redirect(url_for('profile'))
+	return redirect(url_for('login'))
+
+@app.route('/logout', methods=["GET"])
+def logout():
+	if 'user_id' in session:
+		session.pop("user_id")
+		return redirect(url_for('login'))
 	return redirect(url_for('login'))
 
 if __name__ == "__main__":
