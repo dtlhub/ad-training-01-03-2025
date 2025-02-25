@@ -45,11 +45,20 @@
 
             <div id="execution-results">
                 <h3>Execution Results</h3>
-                <div class="result-container">
-                    <h4>Standard Output:</h4>
-                    <pre id="stdout" class="output"></pre>
-                    <h4>Standard Error:</h4>
-                    <pre id="stderr" class="output"></pre>
+
+                <!-- Error box for execution errors -->
+                <div id="execution-error" class="execution-error hidden">
+                    <h4>Execution Error:</h4>
+                    <pre id="error-content" class="error-content"></pre>
+                </div>
+
+                <div id="output-sections">
+                    <div class="result-container">
+                        <h4>Standard Output:</h4>
+                        <pre id="stdout" class="output"></pre>
+                        <h4>Standard Error:</h4>
+                        <pre id="stderr" class="output"></pre>
+                    </div>
                 </div>
             </div>
         </div>

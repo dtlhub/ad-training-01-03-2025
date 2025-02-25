@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const executeButton = document.getElementById('execute-button');
     const stdoutElement = document.getElementById('stdout');
     const stderrElement = document.getElementById('stderr');
+    const errorBox = document.getElementById('execution-error');
+    const errorContent = document.getElementById('error-content');
+    const outputSections = document.getElementById('output-sections');
 
     checkAuthStatus();
 
@@ -151,6 +154,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function displayExecutionError(errorMessage) {
+        errorContent.textContent = errorMessage;
+        errorBox.classList.remove('hidden');
+        outputSections.classList.add('hidden');
+    }
+
+    function hideExecutionError() {
+        errorBox.classList.add('hidden');
+        outputSections.classList.remove('hidden');
+    }
+
     async function executeWasm() {
         const file = wasmFileInput.files[0];
         if (!file) {
@@ -164,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         stdoutElement.textContent = 'Running...';
         stderrElement.textContent = '';
+        hideExecutionError();
 
         try {
             const base64Wasm = await readFileAsBase64(file);
@@ -181,18 +196,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 const result = await response.json();
-
+                hideExecutionError();
                 formatOutput(result.stdout, stdoutElement);
                 formatOutput(result.stderr, stderrElement);
             } else {
-                const errorData = await response.json();
-                stdoutElement.textContent = '(Execution failed)';
-                stderrElement.textContent = errorData.message || 'Unknown error';
+                const contentType = response.headers.get('Content-Type');
+
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    stdoutElement.textContent = '(Execution failed)';
+                    stderrElement.textContent = errorData.message || 'Unknown error';
+                } else {
+                    const errorText = await response.text();
+                    console.log("Execution error text:", errorText);
+                    displayExecutionError(errorText);
+                }
             }
         } catch (error) {
             console.error('Execution error:', error);
-            stdoutElement.textContent = '(Execution failed)';
-            stderrElement.textContent = error.message || 'Unknown error';
+            displayExecutionError(error.message || 'Unknown error');
         }
     }
 
