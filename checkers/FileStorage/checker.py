@@ -42,10 +42,10 @@ class CheckMachine:
             "password": password
         }
         response = session.post(url, data=data)
-        print(f"[+] NEW USER AUTORISED: {username}:{password}")
-        print(f"[+] SESSION COOKIES:{session.cookies}")
-        print(f"[+] SESSION COOKIES:{response.text}")
-        print(f"[+] STATUS CODE: {response.status_code}")
+        #print(f"[+] NEW USER AUTORISED: {username}:{password}")
+        #print(f"[+] SESSION COOKIES:{session.cookies}")
+        #print(f"[+] SESSION COOKIES:{response.text}")
+        #print(f"[+] STATUS CODE: {response.status_code}")
         self.c.assert_eq(response.status_code, 200, "Failed to login", status)
 
     def put_file(self, session: requests.Session, data: str):
@@ -58,8 +58,8 @@ class CheckMachine:
         self.c.assert_eq(response.status_code, 200, "Failed to put file")
 
     def get_file(self, session: requests.Session, status: Status) -> str:
-        print("[+] STARTING func get_file")
-        print(f"[+] SESSION COOKIES: {session.cookies}")
+        #print("[+] STARTING func get_file")
+        #print(f"[+] SESSION COOKIES: {session.cookies}")
         url = f"{self.url}/my_files"
         response = session.get(url)
         soup = BeautifulSoup(response.text, "html.parser")
@@ -71,8 +71,8 @@ class CheckMachine:
             result = session.get(f"{self.url}{found_file}").text
         else:
             result = False
-        print(f"[+] files: {response.text}")
-        print(f"[+] RESULT: {result}")
+        #print(f"[+] files: {response.text}")
+        #print(f"[+] RESULT: {result}")
         self.c.assert_eq(response.status_code, 200, "Failed to get file", status)
         return result
 
@@ -93,8 +93,6 @@ class Checker(BaseChecker):
 
     def __init__(self, *args, **kwargs):
         super(Checker, self).__init__(*args, **kwargs)
-        self.username = rnd_username()
-        self.password = rnd_password()
         self.mch = CheckMachine(self)
 
     def cquit(self, status, public="", private=""):
@@ -131,7 +129,6 @@ class Checker(BaseChecker):
                 {"name": "get", "usage": "checker.py get <ip> <login:password:order_name> <flag> <vuln>"}
             ],
             "vulns": self.vulns,
-            "vuln_details": [{"1": "bof"}, {"2": "change_passwd"}],
             "timeout": 5,
             "attack_data": False,
         }
@@ -142,11 +139,11 @@ class Checker(BaseChecker):
     def check(self):
         try:
             session = get_initialized_session()
-            #username, password = rnd_username(), rnd_password()
+            username, password = rnd_username(), rnd_password()
 
             data = generate_flag()
 
-            self.mch.register(session, rnd_username(), rnd_password())
+            self.mch.register(session, username, password)
             self.mch.put_file(session, data)
 
             flag = self.mch.get_file(session, Status.MUMBLE)
@@ -165,26 +162,30 @@ class Checker(BaseChecker):
             )
 
     def put(self, flag_id: str, flag: str, vuln: str):
-        print("[+] stage 1")
+        #print("[+] stage 1")
         session = get_initialized_session()
 
-        print("[+] stage 2")
-        print(f"[+] USERNAME: {self.username}, PASSWORD: {self.password}")
-        print(f"[+] FLAG: {flag}")
+        username, password = rnd_username(), rnd_password()
 
-        self.mch.register(session, self.username, self.password)
+        #print("[+] stage 2")
+        #print(f"[+] USERNAME: {username}, PASSWORD: {password}")
+        #print(f"[+] FLAG: {flag}")
+
+        self.mch.register(session, username, password)
         self.mch.put_file(session, flag)
-        print("[+] END OF func put()")
-        self.cquit(Status.OK, self.username, f"{self.username}:{self.password}")
+        #print("[+] END OF func put()")
+        self.cquit(Status.OK, f"{username}:{password}", f"{username}:{password}")
 
     def get(self, flag_id: str, flag: str, vuln: str):
         #print("[+] stage 3")
         #print("start get")
         session = get_initialized_session()
 
-        print(f"[+] FLAG: {flag}")
-        print(f"[+] USERNAME: {self.username}, PASSWORD; {self.password}")
-        self.mch.login(session, self.username, self.password, Status.CORRUPT)
+        username, password = flag_id.split(":")
+
+        #print(f"[+] FLAG: {flag}")
+        #print(f"[+] USERNAME: {username}, PASSWORD; {password}")
+        self.mch.login(session, username, password, Status.CORRUPT)
         orders = self.mch.get_file(session, Status.CORRUPT)
 
         self.assert_in(
