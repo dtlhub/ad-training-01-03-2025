@@ -1,13 +1,32 @@
 services:
+  caddy:
+    image: caddy:2.7-alpine
+    ports:
+      - "9091:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frontend:/frontend:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - raas
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 256M
+    networks:
+      raasnet:
+        ipv4_address: 172.43.21.4
+
   raas:
     build:
       context: .
       dockerfile: Dockerfile
       target: runner
-    ports:
-      - 9091:9091
     environment:
-      REDIS_URL: redis://valkey:6379
+      REDIS_URL: redis://172.43.21.3:6379
       USER_DATA_PATH: /user_data
       SECRET_KEY_PATH: /secret/secret_key
     volumes:
@@ -72,6 +91,8 @@ volumes:
   user_data:
   valkey_data:
   secret:
+  caddy_data:
+  caddy_config:
 
 networks:
   raasnet:
