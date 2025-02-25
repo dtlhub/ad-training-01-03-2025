@@ -5,7 +5,7 @@ services:
     ports:
       - 7272:1337
     pids_limit: 512
-    mem_limit: 4096M
+    mem_limit: 512M
     cpus: 1.0
     volumes:
       - "./gladiators:/tmp/gladiators"
@@ -17,5 +17,5 @@ services:
       - "./gladiators:/tmp/gladiators"
     environment:
       - DELETE_AFTER=15m
-      - SLEEP=15m
+      - SLEEP=4m
       - DIRS=/tmp/gladiators

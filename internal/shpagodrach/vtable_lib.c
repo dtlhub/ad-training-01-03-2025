@@ -3,7 +3,7 @@
 #include "vtable_lib.h"
 #include <unistd.h>
 
-// Определяем глобальные данные – переменная будет размещена в секции ".current_data"
+// тут было что-то смешное раньше...
 GlobalData globals __attribute__((section(".current_data"))) = {0};
 
 void defaultAttack(Gladiator *g) {
