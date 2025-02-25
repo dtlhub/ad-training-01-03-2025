@@ -85,6 +85,7 @@
         <a href="/upload">Upload</a>
         <a href="/my_files">My Files</a>
         <a href="/profile">Profile</a>
+        <a href="/logout">Logout</a>
     </nav>
 
     <div class="container">
@@ -92,7 +93,7 @@
         <ul class="file-list">
             {% for file in files %}
                 <li>
-                    <a href="/getfile{{ file[1] }}">{{ file[0].split("/")[-1] }}</a>
+                    <a href="/getfile?id={{ file[1] }}">{{ file[0].split("/")[-1] }}</a>
                 </li>
             {% endfor %}
         </ul>
