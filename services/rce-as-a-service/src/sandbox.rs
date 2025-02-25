@@ -137,7 +137,7 @@ impl Sandbox {
         let state = ComponentState::new(wasi);
         let mut store = Store::new(&self.engine, state);
         store.limiter(|state| &mut state.limits);
-        store.set_fuel(1_000_000)?;
+        store.set_fuel(1_200_000)?;
 
         let as_bad_request = |e: wasmtime::Error| Error::new(Status::BadRequest, e.to_string());
 
