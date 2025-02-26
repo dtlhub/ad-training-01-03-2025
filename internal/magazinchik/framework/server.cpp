@@ -7,20 +7,12 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <sstream>
-#include <thread>
 #include <vector>
-#include <mutex>
 #include <algorithm>
-#include <condition_variable>
-#include <queue>
-#include <atomic>
+#include <signal.h>
+#include <sys/wait.h>
 
 namespace framework {
-    std::mutex queue_mutex;
-    std::condition_variable condition;
-    std::queue<int> client_queue;
-    std::atomic<bool> stop_server{false};
-    std::vector<std::thread> worker_threads;
 
     std::string read_socket_data(int client_socket) {
         char buffer[4096];
@@ -67,26 +59,7 @@ namespace framework {
         close(client_socket);
     }
 
-    void worker_thread() {
-        while (true) {
-            int client_socket;
-            {
-                std::unique_lock<std::mutex> lock(queue_mutex);
-                condition.wait(lock, [] { return !client_queue.empty() || stop_server.load(); });
-
-                if (stop_server.load() && client_queue.empty()) {
-                    return;
-                }
-
-                client_socket = client_queue.front();
-                client_queue.pop();
-            }
-
-            handle_client(client_socket);
-        }
-    }
-
-    void run(int port, size_t max_threads) {
+    void run(int port) {
         int server_fd;
         struct sockaddr_in address;
         int opt = 1;
@@ -118,30 +91,26 @@ namespace framework {
 
         std::cout << "[RUNNING] Сервер запущен на порту " << port << "\n";
 
-        for (size_t i = 0; i < max_threads; ++i) {
-            worker_threads.emplace_back(worker_thread);
-        }
+        signal(SIGCHLD, SIG_IGN);
 
-        while (!stop_server.load()) {
+        while (true) {
             int new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
             if (new_socket < 0) {
                 perror("Ошибка: не удалось принять подключение");
                 continue;
             }
 
-            {
-                std::unique_lock<std::mutex> lock(queue_mutex);
-                client_queue.push(new_socket);
+            pid_t pid = fork();
+            if (pid < 0) {
+                perror("Ошибка: не удалось создать процесс");
+                close(new_socket);
+            } else if (pid == 0) {
+                close(server_fd);
+                handle_client(new_socket);
+                exit(0);
+            } else {
+                close(new_socket);
             }
-            condition.notify_one();
-        }
-
-        // Остановка сервера
-        stop_server.store(true);
-        condition.notify_all();
-
-        for (auto& th : worker_threads) {
-            if (th.joinable()) th.join();
         }
 
         close(server_fd);

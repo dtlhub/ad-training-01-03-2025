@@ -426,6 +426,6 @@ int main() {
     //main page
     router::add_route("GET", "/", handle_index_get);
 
-    framework::run(8080,12);
+    framework::run(8080);
     return 0;
 }

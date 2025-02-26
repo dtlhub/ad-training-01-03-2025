@@ -5,7 +5,7 @@
 
 namespace framework {
     void handle_client(int client_socket);
-    void run(int port, size_t max_threads = 4);
+    void run(int port);
 }
 
 #endif //MAGAZINCHIK_SERVER_H

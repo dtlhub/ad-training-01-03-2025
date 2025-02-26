@@ -70,7 +70,7 @@ def generate_flag(length=31):
 class Checker(BaseChecker):
     vulns: int = 2
     timeout: int = 5
-    uses_attack_data: bool = True
+    uses_attack_data: bool = False
 
     def __init__(self, *args, **kwargs):
         super(Checker, self).__init__(*args, **kwargs)
@@ -126,15 +126,14 @@ class Checker(BaseChecker):
             ],
             "vulns": self.vulns,
             "vuln_details": [{"1": "bof"}, {"2": "change_passwd"}],
-            "timeout": 5,
-            "attack_data": False,
+            "timeout": self.timeout,
+            "attack_data": self.uses_attack_data,
         }
         print(json.dumps(info, indent=4))
         sys.exit(101)
 
     def put(self, flag_id: str, flag: str, vuln: str):
         session = get_initialized_session()
-
         username, password = rnd_username(), rnd_password()
         order_name = rnd_string(10)
         order_description = flag
@@ -152,19 +151,29 @@ class Checker(BaseChecker):
 
         self.mch.login(session, username, password, Status.MUMBLE)
         self.mch.create_order(session, order_name, order_description, order_price)
-        flag_id = f"{username}:{password}:{order_name}"
-        self.cquit(Status.OK, flag_id, flag_id)
+
+        flag_id_mod = f"{username}:{password}:{order_name}"
+        print(flag_id_mod)
+        self.cquit(Status.OK, flag_id_mod, flag_id)
 
     def get(self, flag_id: str, flag: str, vuln: str):
         session = get_initialized_session()
 
-        username, password, order_name = flag_id.split(":")
+        print(f"COOKIE {session.headers.values()}")
+
+        print(f"GET: {flag_id}")
+        fl = flag_id.split('\n')
+        print(f"SPLITED: {fl[0].split(':')}")
+        username, password, order_name = fl[0].split(':')
 
         self.mch.login(session, username, password, Status.CORRUPT)
+
         orders = self.mch.get_order(session, Status.CORRUPT)
 
-        self.assert_in(order_name, orders, "Order not found in the list", Status.CORRUPT)
-        self.assert_in(flag, orders, "Flag not found in the order description", Status.CORRUPT)
+        print(f"Server response: {orders}", file=sys.stderr)
+
+        self.assert_in(order_name, orders, f"Order '{order_name}' not found in the list", Status.CORRUPT)
+        self.assert_in(flag, orders, f"Flag '{flag}' not found in the order description", Status.CORRUPT)
 
         self.cquit(Status.OK)
 
