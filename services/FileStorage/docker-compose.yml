@@ -13,7 +13,7 @@ services:
     image: c4tbuts4d/dedcleaner:latest
     restart: unless-stopped
     volumes:
-      - "./app"
+      - .:/app
     environment:
       - DELETE_AFTER=15m
       - SLEEP=4m
