@@ -4,6 +4,7 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped
+    platform: linux/amd64
     pids_limit: 256
     mem_limit: 128M
     cpus: 0.5
@@ -13,9 +14,10 @@ services:
   cleaner:
     image: c4tbuts4d/dedcleaner:latest
     restart: unless-stopped
+    platform: linux/amd64
     volumes:
-        - "./tmp:/tmp"
+      - "./tmp:/tmp"
     environment:
-        - DELETE_AFTER=15m
-        - SLEEP=15m
-        - DIRS=/tmp
+      - DELETE_AFTER=15m
+      - SLEEP=15m
+      - DIRS=/tmp

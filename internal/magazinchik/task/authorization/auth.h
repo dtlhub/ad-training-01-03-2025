@@ -1,26 +1,18 @@
 #ifndef MAGAZINCHIK_AUTH_H
 #define MAGAZINCHIK_AUTH_H
 
-#define MAX_SESSIONS 1000000
-
 #include <iostream>
-
-#define SESSIONS_FILE "/tmp/sessions.txt"
+#include <string>
 
 namespace auth {
-    struct Session {
-        char username[32];
-        char session_token[65];
-    };
+    const std::string USERS_DIR = "/tmp/users/";
+    const std::string SESSIONS_DIR = "/tmp/sessions/";
+    const std::string ORDERS_DIR = "/tmp/orders/";
 
-    extern Session sessions[MAX_SESSIONS];
-
-    void clean_sessions();
-
-    void generate_token(char *buffer, size_t length);
-    const char* login(const char *username);
-    int is_authorized(const char *token);
-    std::string find_username_by_session(std::string& token);
+    void generate_token(char* buffer, size_t length);
+    const char* login(const char* username);
+    int is_authorized(const char* token);
+    std::string find_username_by_session(const std::string& token);
 }
 
-#endif //MAGAZINCHIK_AUTH_H
+#endif // MAGAZINCHIK_AUTH_H

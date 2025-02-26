@@ -79,8 +79,10 @@ void handle_login_post(int client_socket, const parser::Request &req) {
     std::string username = params["username"];
     std::string password = params["password"];
 
+    password.erase(password.find_last_not_of("\r\n") + 1);
+
     const char *token = "None";
-    if(user::checkUser(username.data(), password.data())) {
+    if (user::checkUser(username.data(), password.data())) {
         token = auth::login(username.data());
     }
 
@@ -142,18 +144,20 @@ void handle_index_get(int client_socket, const parser::Request &req) {
     }
 
     std::string session = it->second;
-    session[session.size()-1] = '\0';
+
+    session.erase(session.find_last_not_of("\r\n") + 1);
 
     bool authorized = auth::is_authorized(session.c_str());
 
-    if(authorized) {
-        session[session.size()-1] = '\n';
+    if (authorized) {
         std::string username = auth::find_username_by_session(session);
 
-        user::User u = user::find_user_by_username(username.data());
+        if (username.empty()) {
+            std::cerr << "Username not found for session: " << session << std::endl;
+            return;
+        }
 
-        username.clear();
-        username.assign(u.username);
+        user::User u = user::find_user_by_username(username.data());
 
         std::unordered_map<std::string, std::string> context = {
                 {"title", "Magazinchik"},
@@ -192,18 +196,20 @@ void handle_order_get(int client_socket, const parser::Request &req) {
     }
 
     std::string session = it->second;
-    session[session.size()-1] = '\0';
+
+    session.erase(session.find_last_not_of("\r\n") + 1);
 
     bool authorized = auth::is_authorized(session.c_str());
 
-    if(authorized) {
-        session[session.size()-1] = '\n';
+    if (authorized) {
         std::string username = auth::find_username_by_session(session);
 
-        user::User u = user::find_user_by_username(username.data());
+        if (username.empty()) {
+            std::cerr << "Username not found for session: " << session << std::endl;
+            return;
+        }
 
-        username.clear();
-        username.assign(u.username);
+        user::User u = user::find_user_by_username(username.data());
 
         std::unordered_map<std::string, std::string> context = {
                 {"title", "Magazinchik"},
@@ -225,13 +231,27 @@ void handle_order_get(int client_socket, const parser::Request &req) {
         send(client_socket, response.c_str(), response.length(), 0);
     }
 }
-
 void handle_order_post(int client_socket, const parser::Request &req) {
     std::unordered_map<std::string, std::string> params = parser::parse_post_body(req.body);
 
     std::string name = params["name"];
     std::string description = params["description"];
-    std::string price = params["price"];
+    std::string price_str = params["price"];
+
+    // Проверка на пустые параметры
+    if (name.empty() || description.empty() || price_str.empty()) {
+        std::cerr << "Missing required parameters!" << std::endl;
+        return;
+    }
+
+    // Проверка на корректность цены
+    int price = 0;
+    try {
+        price = std::stoi(price_str);
+    } catch (const std::invalid_argument& e) {
+        std::cerr << "Invalid price format!" << std::endl;
+        return;
+    }
 
     auto it = req.cookies.find("session");
     if (it == req.cookies.end()) {
@@ -240,9 +260,15 @@ void handle_order_post(int client_socket, const parser::Request &req) {
     }
 
     std::string session = it->second;
+    session.erase(session.find_last_not_of("\r\n") + 1);
     std::string username = auth::find_username_by_session(session);
 
-    if (order::add_order(name.data(), description.data(), username.data(), stoi(price))) {
+    if (username.empty()) {
+        std::cerr << "User not found for the given session!" << std::endl;
+        return;
+    }
+
+    if (order::add_order(name, description, username, price)) {
         std::cout << "Order added successfully!" << std::endl;
     } else {
         std::cerr << "Failed to add order." << std::endl;
@@ -257,6 +283,7 @@ void handle_order_post(int client_socket, const parser::Request &req) {
     send(client_socket, response.c_str(), response.length(), 0);
 }
 
+
 void handle_my_order_get(int client_socket, const parser::Request &req) {
     auto it = req.cookies.find("session");
     if (it == req.cookies.end()) {
@@ -265,18 +292,20 @@ void handle_my_order_get(int client_socket, const parser::Request &req) {
     }
 
     std::string session = it->second;
-    session[session.size()-1] = '\0';
+
+    session.erase(session.find_last_not_of("\r\n") + 1);
 
     bool authorized = auth::is_authorized(session.c_str());
 
-    if(authorized) {
-        session[session.size()-1] = '\n';
+    if (authorized) {
         std::string username = auth::find_username_by_session(session);
 
-        user::User u = user::find_user_by_username(username.data());
+        if (username.empty()) {
+            std::cerr << "Username not found for session: " << session << std::endl;
+            return;
+        }
 
-        username.clear();
-        username.assign(u.username);
+        user::User u = user::find_user_by_username(username.data());
 
         std::unordered_map<std::string, std::string> context = {
                 {"title", "Magazinchik"},
@@ -327,7 +356,8 @@ void handle_buy_get(int client_socket, const parser::Request &req) {
     }
 
     std::string session = it->second;
-    session.erase(session.find_last_not_of("\r\n ") + 1);
+
+    session.erase(session.find_last_not_of("\r\n") + 1);
 
     bool authorized = auth::is_authorized(session.c_str());
     if (!authorized) {
@@ -396,6 +426,6 @@ int main() {
     //main page
     router::add_route("GET", "/", handle_index_get);
 
-    framework::run(8080,4);
+    framework::run(8080,12);
     return 0;
 }

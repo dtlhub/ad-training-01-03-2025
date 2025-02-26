@@ -13,12 +13,14 @@
 #include <algorithm>
 #include <condition_variable>
 #include <queue>
+#include <atomic>
 
 namespace framework {
     std::mutex queue_mutex;
     std::condition_variable condition;
     std::queue<int> client_queue;
-    bool stop_server = false;
+    std::atomic<bool> stop_server{false};
+    std::vector<std::thread> worker_threads;
 
     std::string read_socket_data(int client_socket) {
         char buffer[4096];
@@ -70,9 +72,9 @@ namespace framework {
             int client_socket;
             {
                 std::unique_lock<std::mutex> lock(queue_mutex);
-                condition.wait(lock, [] { return !client_queue.empty() || stop_server; });
+                condition.wait(lock, [] { return !client_queue.empty() || stop_server.load(); });
 
-                if (stop_server && client_queue.empty()) {
+                if (stop_server.load() && client_queue.empty()) {
                     return;
                 }
 
@@ -84,7 +86,7 @@ namespace framework {
         }
     }
 
-    void run(int port, size_t thread_pool_size = 4) {
+    void run(int port, size_t max_threads) {
         int server_fd;
         struct sockaddr_in address;
         int opt = 1;
@@ -116,12 +118,11 @@ namespace framework {
 
         std::cout << "[RUNNING] Сервер запущен на порту " << port << "\n";
 
-        std::vector<std::thread> pool;
-        for (size_t i = 0; i < thread_pool_size; ++i) {
-            pool.emplace_back(worker_thread);
+        for (size_t i = 0; i < max_threads; ++i) {
+            worker_threads.emplace_back(worker_thread);
         }
 
-        while (true) {
+        while (!stop_server.load()) {
             int new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
             if (new_socket < 0) {
                 perror("Ошибка: не удалось принять подключение");
@@ -136,13 +137,10 @@ namespace framework {
         }
 
         // Остановка сервера
-        {
-            std::unique_lock<std::mutex> lock(queue_mutex);
-            stop_server = true;
-        }
+        stop_server.store(true);
         condition.notify_all();
 
-        for (auto& th : pool) {
+        for (auto& th : worker_threads) {
             if (th.joinable()) th.join();
         }
 

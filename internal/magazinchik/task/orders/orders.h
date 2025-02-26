@@ -1,31 +1,26 @@
-//
-// Created by Андрей Шпак on 11.02.2025.
-//
-
 #ifndef MAGAZINCHIK_ORDERS_H
 #define MAGAZINCHIK_ORDERS_H
 
-#define ORDERS_FILE "/tmp/orders.txt"
-#define BOUGHT_ORDERS "/tmp/bought.txt" // <username>:<order_name>
-
-#include <iostream>
+#include <string>
 #include <vector>
-#include <cstring>
 #include <unordered_map>
 
-namespace order{
-    struct Order{
-        char name[32];
-        char description[512];
-        char author[32];
-        int price=200;
+namespace order {
+    const std::string ORDERS_DIR = "/tmp/orders/";
+    const std::string USER_ORDERS_DIR = "/tmp/user_orders/";
+
+    struct Order {
+        std::string name;
+        std::string description;
+        std::string author;
+        int price;
     };
 
-    bool add_order(char* name, char* description, char* author, int price = 200);
-    bool buy_order(char* username , int& balance,std::string &product_id);
-
-    std::vector<std::unordered_map<std::string, std::string> > file_to_vec();
-    std::vector<std::unordered_map<std::string, std::string> > my_orders(std::string& username);
+    bool add_order(const std::string& name, const std::string& description, const std::string& author, int price);
+    bool buy_order(const std::string& username, int& balance, const std::string& product_id);
+    std::vector<std::unordered_map<std::string, std::string>> file_to_vec();
+    std::vector<std::unordered_map<std::string, std::string>> my_orders(const std::string& username);
+    bool has_bought_order(const std::string& username, const std::string& order_name);
 }
 
-#endif //MAGAZINCHIK_ORDERS_H
+#endif // MAGAZINCHIK_ORDERS_H

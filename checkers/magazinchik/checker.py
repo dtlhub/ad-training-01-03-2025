@@ -141,6 +141,9 @@ class Checker(BaseChecker):
         order_description = flag
         order_price = rnd_integer(101, 500)
 
+        self.username = rnd_username()
+        self.password = rnd_password()
+
         if vuln == "1":
             order_name += "_1"
         elif vuln == "2":

