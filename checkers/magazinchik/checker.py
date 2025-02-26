@@ -74,8 +74,6 @@ class Checker(BaseChecker):
 
     def __init__(self, *args, **kwargs):
         super(Checker, self).__init__(*args, **kwargs)
-        self.username = "stat"
-        self.password = "stat"
         self.mch = CheckMachine(self)
 
     def cquit(self, status, public='', private=''):
@@ -137,6 +135,7 @@ class Checker(BaseChecker):
     def put(self, flag_id: str, flag: str, vuln: str):
         session = get_initialized_session()
 
+        username, password = rnd_username(), rnd_password()
         order_name = rnd_string(10)
         order_description = flag
         order_price = rnd_integer(101, 500)
@@ -147,22 +146,24 @@ class Checker(BaseChecker):
             order_name += "_2"
 
         try:
-            self.mch.register(session, self.username, self.password)
+            self.mch.register(session, username, password)
         except AssertionError:
             pass
 
-        self.mch.login(session, self.username, self.password, Status.MUMBLE)
+        self.mch.login(session, username, password, Status.MUMBLE)
         self.mch.create_order(session, order_name, order_description, order_price)
-
-        self.cquit(Status.OK, order_name, order_name)
+        flag_id = f"{username}:{password}:{order_name}"
+        self.cquit(Status.OK, flag_id, flag_id)
 
     def get(self, flag_id: str, flag: str, vuln: str):
         session = get_initialized_session()
 
-        self.mch.login(session, self.username, self.password, Status.CORRUPT)
+        username, password, order_name = flag_id.split(":")
+
+        self.mch.login(session, username, password, Status.CORRUPT)
         orders = self.mch.get_order(session, Status.CORRUPT)
 
-        self.assert_in(flag_id, orders, "Order not found in the list", Status.CORRUPT)
+        self.assert_in(order_name, orders, "Order not found in the list", Status.CORRUPT)
         self.assert_in(flag, orders, "Flag not found in the order description", Status.CORRUPT)
 
         self.cquit(Status.OK)
