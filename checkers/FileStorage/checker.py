@@ -23,17 +23,17 @@ class CheckMachine:
         self.c = checker
         self.port = PORT
 
-    def register(self, session: requests.Session, username: str, password: str):
+    def register(self, session: requests.Session, username: str, password: str, email: str, status: Status):
         url = f"{self.url}/register"
         data = {
             "username": username,
-            "email": "asd@asd",
+            "email": email,
             "password": password,
         }
         response = session.post(url, data=data)
         #print(f"[+] NEW USER REGISTERED: {username}:{password}")
         #print(f"[+] STATUS CODE: {response.status_code}")
-        self.c.assert_eq(response.status_code, 200, "Failed to register user")
+        self.c.assert_eq(response.status_code, 200, "Failed to register user", status)
 
     def login(self, session: requests.Session, username: str, password: str, status: Status):
         url = f"{self.url}/login"
@@ -47,8 +47,40 @@ class CheckMachine:
         #print(f"[+] SESSION COOKIES:{response.text}")
         #print(f"[+] STATUS CODE: {response.status_code}")
         self.c.assert_eq(response.status_code, 200, "Failed to login", status)
+    def logout(self, session: requests.Session, status: Status):
+        url = f"{self.url}/logout"
 
-    def put_file(self, session: requests.Session, data: str):
+        response = session.get(url)
+
+        self.c.assert_eq(response.status_code, 200, "Failed to logout", status)
+    def check_email_change(self, session: requests.Session, new_email: str, status: Status):
+        url = f"{self.url}/change"
+
+        data = {"change-option": "email", "new-value": new_email}
+
+        response = session.post(url, data=data)
+
+        self.c.assert_eq(response.status_code, 200, "Failed to change email(1)", status)
+
+        response = session.get(f"{self.url}/profile")
+
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        email = soup.find("div", class_="email").text
+
+        self.c.assert_eq(email, new_email, "Failed to change email(2)", status)
+
+    def change_password(self, session: requests.Session, new_password: str, status: Status):
+        url = f"{self.url}/change"
+
+        data = {"change-option": "password", "new-value": new_password}
+
+        response = session.post(url, data=data)
+
+        self.c.assert_eq(response.status_code, 200, "Failed to change email(1)", status)
+
+
+    def put_file(self, session: requests.Session, data: str, status: Status):
         #print("[+] STARTING func put_file")
         #print(f"[+] SESSION COOKIE: {session.cookies}")
         #print(f"[+] FLAG: {data}")
@@ -80,6 +112,8 @@ class CheckMachine:
 def rnd_integer(min_value: int, max_value: int) -> int:
     return random.randint(min_value, max_value)
 
+def rnd_string(length=50):
+    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(length))
 
 def generate_flag(length=31):
     chars = string.ascii_uppercase + string.digits
@@ -133,10 +167,19 @@ class Checker(BaseChecker):
             session = get_initialized_session()
             username, password = rnd_username(), rnd_password()
 
-            data = generate_flag()
+            data = rnd_string()
 
-            self.mch.register(session, username, password)
-            self.mch.put_file(session, data)
+            email = f"{username}@mail.ru"
+
+            new_email = f"{rnd_string()}@mail.ru"
+            new_password = rnd_password()
+
+            self.mch.register(session, username, password, email, Status.MUMBLE)
+            self.mch.put_file(session, data, Status.MUMBLE)
+            self.mch.check_email_change(session, new_email, Status.MUMBLE)
+            self.mch.change_password(session, new_password, Status.MUMBLE)
+            self.mch.logout(session, Status.MUMBLE)
+            self.mch.login(session, username, new_password, Status.MUMBLE)
 
             flag = self.mch.get_file(session, Status.MUMBLE)
             #print(f"[+] DATA: {data}, FLAG: {flag}")
@@ -159,12 +202,14 @@ class Checker(BaseChecker):
 
         username, password = rnd_username(), rnd_password()
 
+        email = f"{username}@mail.ru"
+
         #print("[+] stage 2")
         #print(f"[+] USERNAME: {username}, PASSWORD: {password}")
         #print(f"[+] FLAG: {flag}")
 
-        self.mch.register(session, username, password)
-        self.mch.put_file(session, flag)
+        self.mch.register(session, username, password, email, Status.CORRUPT)
+        self.mch.put_file(session, flag, Status.CORRUPT)
         #print("[+] END OF func put()")
         cquit(Status.OK, username, f"{username}:{password}")
 

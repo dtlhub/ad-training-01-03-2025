@@ -2,7 +2,19 @@ services:
   web:
     build: .
     restart: "unless-stopped"
+    pids_limit: 512
+    mem_limit: 512M
+    cpus: 1.0
     ports:
       - "5000:5000"
     volumes:
       - .:/app
+  cleaner:
+    image: c4tbuts4d/dedcleaner:latest
+    restart: unless-stopped
+    volumes:
+      - "./app"
+    environment:
+      - DELETE_AFTER=15m
+      - SLEEP=4m
+      - DIRS=/app/uploads
