@@ -74,8 +74,8 @@ class Checker(BaseChecker):
 
     def __init__(self, *args, **kwargs):
         super(Checker, self).__init__(*args, **kwargs)
-        self.username = "static_user"
-        self.password = "static_pass"
+        self.username = "stat"
+        self.password = "stat"
         self.mch = CheckMachine(self)
 
     def cquit(self, status, public='', private=''):
@@ -140,9 +140,6 @@ class Checker(BaseChecker):
         order_name = rnd_string(10)
         order_description = flag
         order_price = rnd_integer(101, 500)
-
-        self.username = rnd_username()
-        self.password = rnd_password()
 
         if vuln == "1":
             order_name += "_1"
