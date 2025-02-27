@@ -238,13 +238,11 @@ void handle_order_post(int client_socket, const parser::Request &req) {
     std::string description = params["description"];
     std::string price_str = params["price"];
 
-    // Проверка на пустые параметры
     if (name.empty() || description.empty() || price_str.empty()) {
         std::cerr << "Missing required parameters!" << std::endl;
         return;
     }
 
-    // Проверка на корректность цены
     int price = 0;
     try {
         price = std::stoi(price_str);

@@ -53,6 +53,11 @@ class CheckMachine:
         response = session.post(url, data=data)
         self.c.assert_eq(response.status_code, 302, "Failed to create order")
 
+    def buy_order(self, session: requests.Session, product_id: str, status: Status):
+        url = f'{self.url}/buy?product_id={product_id}'
+        response = session.get(url)
+        self.c.assert_eq(response.status_code, 200, "Failed to buy order", status)
+
     def get_order(self, session: requests.Session, status: Status) -> str:
         url = f'{self.url}/my_order'
         response = session.get(url)
@@ -98,13 +103,15 @@ class Checker(BaseChecker):
             session = get_initialized_session()
             username, password = rnd_username(), rnd_password()
 
-            order_name = rnd_string(10)
-            order_description = generate_flag()
-            order_price = rnd_integer(100, 1000)
+            order_name = rnd_string(9)
+            order_description = rnd_string(20)
+            order_price = rnd_integer(10, 50)
 
             self.mch.register(session, username, password)
             self.mch.login(session, username, password, Status.MUMBLE)
             self.mch.create_order(session, order_name, order_description, order_price)
+
+            self.mch.buy_order(session, order_name, Status.MUMBLE)
 
             orders = self.mch.get_order(session, Status.MUMBLE)
             self.assert_in(order_name, orders, "Order not found in the list")
@@ -139,11 +146,6 @@ class Checker(BaseChecker):
         order_description = flag
         order_price = rnd_integer(101, 500)
 
-        if vuln == "1":
-            order_name += "_1"
-        elif vuln == "2":
-            order_name += "_2"
-
         try:
             self.mch.register(session, username, password)
         except AssertionError:
@@ -158,12 +160,7 @@ class Checker(BaseChecker):
 
     def get(self, flag_id: str, flag: str, vuln: str):
         session = get_initialized_session()
-
-        print(f"COOKIE {session.headers.values()}")
-
-        print(f"GET: {flag_id}")
         fl = flag_id.split('\n')
-        print(f"SPLITED: {fl[0].split(':')}")
         username, password, order_name = fl[0].split(':')
 
         self.mch.login(session, username, password, Status.CORRUPT)

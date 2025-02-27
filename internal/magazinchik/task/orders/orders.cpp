@@ -3,6 +3,8 @@
 #include <fstream>
 #include <filesystem>
 #include <sstream>
+#include <unordered_set>
+#include <unordered_map>
 
 #include "../user/user.h"
 
@@ -93,6 +95,7 @@ namespace order {
 
     std::vector<std::unordered_map<std::string, std::string>> my_orders(const std::string& username) {
         std::vector<std::unordered_map<std::string, std::string>> orders;
+        std::unordered_set<std::string> unique_orders;
 
         auto load_orders_from_directory = [&](const std::string& directory_path, bool check_author = false) {
             if (!fs::exists(directory_path)) {
@@ -117,10 +120,16 @@ namespace order {
                     order["author"] = author;
                     order["price"] = price;
 
-                    orders.push_back(order);
+                    std::string unique_key = order["name"] + "|" + order["description"] + "|" + order["author"] + "|" + order["price"];
+
+                    if (unique_orders.find(unique_key) == unique_orders.end()) {
+                        unique_orders.insert(unique_key);
+                        orders.push_back(order);
+                    }
                 }
             }
         };
+
         load_orders_from_directory(ORDERS_DIR, true);
 
         std::string user_orders_path = USER_ORDERS_DIR + username;
