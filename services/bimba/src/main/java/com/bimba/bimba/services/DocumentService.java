@@ -86,8 +86,8 @@ public class DocumentService {
         
         // Set username in document
         document.setUsername(userDetails.getUsername());
-        File tmp = new File("/tmp/aaaa.docx");
-        file.transferTo(tmp);
+        //File tmp = new File("/tmp/aaaa.docx");
+        //file.transferTo(tmp);
         // Create upload directory if it doesn't exist
         Path uploadPath = Paths.get(uploadDir + "/uploads");
         if (!Files.exists(uploadPath)) {
@@ -95,10 +95,10 @@ public class DocumentService {
         }
         File out = new File(uploadDir + "/uploads");
         ITemplateEngine engine = new MustacheTemplateEngine();
-        InputStream is = new FileInputStream(tmp);
-        System.out.println("HHHHH");
+        // InputStream is = new FileInputStream(tmp);
+        // System.out.println("HHHHH");
 
-        IXDocReport report = XDocReportRegistry.getRegistry().loadReport(is, engine, true);//TemplateEngineKind.Freemarker);
+        IXDocReport report = XDocReportRegistry.getRegistry().loadReport(file.getInputStream(), engine, true);//TemplateEngineKind.Freemarker);
 
         report.addPreprocessor( "word/fontTable.xml", DocxDocumentPreprocessor.INSTANCE );
         IContext context = convert(boyfrend, report);

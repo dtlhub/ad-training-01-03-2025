@@ -38,7 +38,7 @@ class Document:
         builder.write(text)
         doc.save(f'/tmp/uploads/{name}.docx')
         uuid = ''
-        data = {"name": rnd_string(random.randint(1,10)), "age": random.randint(18,100)}
+        data = {"name": rnd_string(random.randint(1,10)), "age": str(random.randint(18,100))}
         return Document(name, text, data, '')
 
 

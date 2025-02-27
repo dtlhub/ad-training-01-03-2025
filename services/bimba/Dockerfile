@@ -15,4 +15,9 @@ RUN mkdir -p /root/uploads && \
     chmod 777 /root/uploads
 
 EXPOSE 8070
-ENTRYPOINT ["java","-jar","app.jar"]
+
+# Use environment variable for JWT secret
+ENV JWT_SECRET=default_secret_replace_in_production
+
+ENTRYPOINT ["java", "-jar", "app.jar", \
+           "--bezkoder.app.jwtSecret=${JWT_SECRET}"]

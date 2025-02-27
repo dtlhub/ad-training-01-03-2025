@@ -64,6 +64,7 @@ public class MustacheTemplateEngine extends AbstractTemplateEngine {
                     m.execute(writer1,context.getContextMap()).flush();
                     writer.write(writer1.toString());
                     writer.flush();
+                    writer.close();
                     System.out.println(writer1.toString());
                 }
                 

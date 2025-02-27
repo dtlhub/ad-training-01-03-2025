@@ -1,6 +1,7 @@
 package com.bimba.bimba.controllers;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import com.bimba.bimba.models.User;
 import com.bimba.bimba.models.Boyfrend;
 import com.bimba.bimba.models.Document;
 import com.bimba.bimba.repository.DocumentRepository;
+import com.bimba.bimba.security.services.UserDetailsImpl;
 import com.bimba.bimba.services.DocumentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -52,6 +54,8 @@ public class DocumentController {
     @GetMapping("/")
     public ModelAndView getDocuments() {
         List<Document> documents= documentService.getUserDocuments();
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext()
+            .getAuthentication().getPrincipal();
         Map<String, Object> params = new HashMap<String, Object>();
 		params.put("documents", documents);
         return new ModelAndView("documents", params);
@@ -71,9 +75,15 @@ public class DocumentController {
 
     @GetMapping("/search")
     public ModelAndView getMethodName(@RequestParam String name) {
-        List<Document> documents = documentService.searchDocuments(name);
+        List<Document> documents = new ArrayList<>();
+        if (name.isEmpty()){
+            documents = documentService.getUserDocuments();
+        }else{
+            documents = documentService.searchDocuments(name);
+        }
         Map<String, Object> params = new HashMap<String, Object>();
 		params.put("documents", documents);
+    
         return new ModelAndView("documents", params);
     }
     
@@ -86,9 +96,9 @@ public class DocumentController {
         try {
             String uuid = UUID.randomUUID().toString();
             Boyfrend boyfrend = objectMapper.readValue(object, Boyfrend.class);
-            System.out.println("hui");
-            System.out.println(boyfrend.getName());
-            System.out.println("hui");
+            // System.out.println("hui");
+            // System.out.println(boyfrend.getName());
+            // System.out.println("hui");
             Document document = new Document(
                 uuid,
                 null, // username will be set in service

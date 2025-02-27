@@ -57,9 +57,8 @@ class Checker(BaseChecker):
             self.cquit(Status.MUMBLE, "Download error", "Failed to download document")
         temp = docx2txt.process(f'/tmp/{document_card.uuid}.docx')
         text = ' '.join([line.replace('\t', ' ') for line in temp.split('\n') if line])
-        print(text[164:-80])
-        print(doc.text)
-        if doc.text != text[164:-80]:
+        expected_text = doc.text.replace('{{name}}', doc.data['name']).replace('{{age}}', doc.data['age'])
+        if expected_text != text[164:-80]:
             self.cquit(Status.MUMBLE, "Document error", "Document data is different")
 
     def check_search(self):
@@ -73,11 +72,12 @@ class Checker(BaseChecker):
     def put(self, flag_id: str, flag: str, vuln: str):
         user = User.random()
         session = self.get_initialized_session()
-        self.mch.register_user(user)
+        self.mch.register_user(session, user)
+        self.mch.login(session, user)
         doc = Document.generate_doc()
         doc.data = {"name": flag, "age": random.randint(18, 100)}
         self.mch.upload(session, doc)
-        self.cquit(Status.OK, json.dumps({"uuid": doc.uuid, "location": "documents"}), user.serialize())
+        self.cquit(Status.OK, json.dumps({"uuid": doc.uuid, "username":user.username, "location": "documents"}), user.serialize())
     
     def get(self, flag_id: str, flag: str, vuln: str):
         user = User.deserialize(flag_id)

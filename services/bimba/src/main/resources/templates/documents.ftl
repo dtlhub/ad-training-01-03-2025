@@ -59,9 +59,62 @@
             margin: 10px auto;
             box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
         }
+        .header {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .search-box {
+            padding: 8px;
+            border-radius: 8px;
+            border: none;
+            width: 200px;
+        }
+        .search-btn {
+            background-color: #ff69b4;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 8px 15px;
+            cursor: pointer;
+            box-shadow: 2px 2px 4px rgba(255, 20, 147, 0.5);
+        }
+        .search-btn:hover {
+            background-color: #ff1493;
+        }
+        .logout-btn {
+            background-color: #ff1493;
+        }
     </style>
 </head>
 <body>
+    <div class="header">
+        <div class="user-info">
+            <span>Welcome, ${username!"Guest"}!</span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+        <div class="search-container">
+            <input type="text" 
+                   class="search-box" 
+                   id="searchInput" 
+                   placeholder="Search documents...">
+            <button class="search-btn" id="search" onclick="window.location.href=`/document/search?name=`+document.getElementById('searchInput').value.toLowerCase()">Search</button>
+        </div>
+    </div>
 
 <div class="document-list">
     <h2>Your Documents</h2>
@@ -87,6 +140,7 @@
 </div>
 
 <script>
+
     function downloadDocument(uid) {
         const url = `/document/download/`+uid;
         fetch(url)
@@ -138,6 +192,7 @@
             alert('An error occurred while uploading the document: ' + error.message);
         });
     }
+
 </script>
 
 </body>
