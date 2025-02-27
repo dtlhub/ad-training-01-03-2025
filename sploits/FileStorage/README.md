@@ -52,3 +52,20 @@ def register(username, email, password):
 	connection.close()
 	return result[0]
 ```
+
+- 4-ая уязвимость (sql injection)
+функция смены пароля/почты имеет уязвимость, текст из change-option напрямую вставляется в sql запрос, без использования параметризации
+
+```angular2html
+def change(change_option, value, user_id):
+	connection = sqlite3.connect('./db.db')
+	cursor = connection.cursor()
+	if change_option == "password":
+		value = sha256(value.encode('utf-8')).hexdigest()
+		change_option = "hashed_password"
+	cursor.execute(f'UPDATE users SET {change_option} = ? WHERE id = ?', (value, user_id))
+	connection.commit()
+	return 0
+```
+
+
