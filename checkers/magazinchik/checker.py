@@ -75,19 +75,11 @@ def generate_flag(length=31):
 class Checker(BaseChecker):
     vulns: int = 2
     timeout: int = 5
-    uses_attack_data: bool = False
+    uses_attack_data: bool = True
 
     def __init__(self, *args, **kwargs):
         super(Checker, self).__init__(*args, **kwargs)
         self.mch = CheckMachine(self)
-
-    def cquit(self, status, public='', private=''):
-        if status == Status.OK:
-            print(private)
-            sys.exit(101)
-        else:
-            print(private, file=sys.stderr)
-            sys.exit(104)
 
     def action(self, action, *args, **kwargs):
         try:
@@ -117,12 +109,12 @@ class Checker(BaseChecker):
             self.assert_in(order_name, orders, "Order not found in the list")
             self.assert_in(order_description, orders, "Order description not found in the list")
 
-            self.cquit(Status.OK)
+            cquit(Status.OK)
         except CheckFinished:
             raise
         except Exception as e:
             error_traceback = traceback.format_exc()
-            self.cquit(Status.DOWN, 'Unexpected error', f'Unexpected error in check: {str(e)}\nTraceback:\n{error_traceback}')
+            cquit(Status.DOWN, 'Unexpected error', f'Unexpected error in check: {str(e)}\nTraceback:\n{error_traceback}')
 
     def info(self):
         info = {
@@ -156,7 +148,7 @@ class Checker(BaseChecker):
 
         flag_id_mod = f"{username}:{password}:{order_name}"
 
-        self.cquit(Status.OK, public=json.dumps({"username":username , "order_name":order_name}), private=flag_id_mod)
+        cquit(Status.OK, public=json.dumps({"username":username , "order_name":order_name}), private=flag_id_mod)
 
     def get(self, flag_id: str, flag: str, vuln: str):
         session = get_initialized_session()
@@ -170,7 +162,7 @@ class Checker(BaseChecker):
         self.assert_in(order_name, orders, f"Order '{order_name}' not found in the list", Status.CORRUPT)
         self.assert_in(flag, orders, f"Flag '{flag}' not found in the order description", Status.CORRUPT)
 
-        self.cquit(Status.OK)
+        cquit(Status.OK)
 
 if __name__ == '__main__':
     c = Checker(sys.argv[2])
