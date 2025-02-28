@@ -11,11 +11,7 @@ services:
       - "./tmp:/tmp"
 
   cleaner:
-    image: c4tbuts4d/dedcleaner:latest
+    build: cleaner
     restart: unless-stopped
     volumes:
-      - "./tmp:/tmp"
-    environment:
-      - DELETE_AFTER=15m
-      - SLEEP=2m
-      - DIRS=/tmp
+      - ./tmp:/tmp
