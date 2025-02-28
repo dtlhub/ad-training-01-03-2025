@@ -3,6 +3,7 @@
 #include <fstream>
 #include <filesystem>
 #include <sstream>
+#include <algorithm>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -73,7 +74,20 @@ namespace order {
 
     std::vector<std::unordered_map<std::string, std::string>> file_to_vec() {
         std::vector<std::unordered_map<std::string, std::string>> orders;
+        std::vector<std::filesystem::directory_entry> entries;
+
         for (const auto& entry : fs::directory_iterator(ORDERS_DIR)) {
+            entries.push_back(entry);
+        }
+
+        std::sort(entries.begin(), entries.end(), [](const auto& a, const auto& b) {
+            return fs::last_write_time(a) > fs::last_write_time(b);
+        });
+
+        int count = 0;
+        for (const auto& entry : entries) {
+            if (count >= 50) break;
+
             std::ifstream in(entry.path());
             if (in.is_open()) {
                 std::unordered_map<std::string, std::string> order;
@@ -88,10 +102,12 @@ namespace order {
                 order["price"] = price;
 
                 orders.push_back(order);
+                count++;
             }
         }
         return orders;
     }
+
 
     std::vector<std::unordered_map<std::string, std::string>> my_orders(const std::string& username) {
         std::vector<std::unordered_map<std::string, std::string>> orders;
