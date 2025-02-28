@@ -156,8 +156,6 @@ namespace order {
             }
         };
 
-        load_orders_from_directory(ORDERS_DIR, true);
-
         std::string user_orders_path = USER_ORDERS_DIR + username;
         load_orders_from_directory(user_orders_path);
 
