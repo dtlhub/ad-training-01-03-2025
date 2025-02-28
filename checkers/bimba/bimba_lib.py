@@ -133,7 +133,6 @@ class CheckMachine:
             },
             files={'file':file}
         ).json()
-        print(resp)
         self.c.assert_in(resp["message"], "File uploaded successfully!", status)
         return resp["uuid"]
         
