@@ -13,14 +13,25 @@ namespace fs = std::filesystem;
 
 namespace order {
     bool add_order(const std::string& name, const std::string& description, const std::string& author, int price) {
+        std::string user_orders_dir = USER_ORDERS_DIR + author;
+        fs::create_directories(user_orders_dir);
+
         fs::create_directories(ORDERS_DIR);
 
-        std::ofstream out(ORDERS_DIR + name);
-        if (out.is_open()) {
-            out << description << "\n" << author << "\n" << price << "\n";
+        std::ofstream user_out(user_orders_dir + "/" + name);
+        if (user_out.is_open()) {
+            user_out << description << "\n" << author << "\n" << price << "\n";
+        } else {
+            std::cerr << "[ERROR] Couldn't create order file in user directory: " << name << std::endl;
+            return false;
+        }
+
+        std::ofstream order_out(ORDERS_DIR + "/" + name);
+        if (order_out.is_open()) {
+            order_out << description << "\n" << author << "\n" << price << "\n";
             return true;
         } else {
-            std::cerr << "[ERROR] Couldn't create order file: " << name << std::endl;
+            std::cerr << "[ERROR] Couldn't create order file in general orders directory: " << name << std::endl;
             return false;
         }
     }
@@ -52,7 +63,6 @@ namespace order {
         if (user_file.is_open()) {
             std::string passwd;
             passwd.assign(u.password);
-
             user_file << passwd << ":" << balance;
             user_file.close();
         } else {
