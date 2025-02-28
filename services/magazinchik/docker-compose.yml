@@ -1,0 +1,17 @@
+services:
+  magazinchik:
+    build: ./task
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    pids_limit: 256
+    mem_limit: 128M
+    cpus: 0.5
+    volumes:
+      - "./tmp:/tmp"
+
+  cleaner:
+    build: cleaner
+    restart: unless-stopped
+    volumes:
+      - ./tmp:/tmp

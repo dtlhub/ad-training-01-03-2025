@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import json
 import sys
 import requests
 
@@ -71,8 +71,10 @@ class Checker(BaseChecker):
 
 if __name__ == '__main__':
     c = Checker(sys.argv[2])
-
     try:
-        c.action(sys.argv[1], *sys.argv[3:])
+        if sys.argv[1] == "info":
+            c.info()
+        else:
+            c.action(sys.argv[1], *sys.argv[3:])
     except c.get_check_finished_exception():
         cquit(Status(c.status), c.public, c.private)
