@@ -1,0 +1,23 @@
+services:
+  web:
+    build: .
+    restart: "unless-stopped"
+    pids_limit: 512
+    mem_limit: 512M
+    cpus: 1.0
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+
+  cleaner:
+    build: cleaner
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 128M
+

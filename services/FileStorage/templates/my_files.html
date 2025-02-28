@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Files</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f8ff; /* Светло-синий фон */
+            color: #333;
+        }
+
+        header {
+            background-color: #0073e6; /* Синий цвет для шапки */
+            padding: 10px 0;
+            text-align: center;
+            color: white;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: #005bb5; /* Темно-синий цвет для навигации */
+            padding: 10px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 18px;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .file-list li {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #e6f3ff; /* Светло-синий фон для элементов списка */
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .file-list li:hover {
+            background-color: #cce6ff; /* Более темный оттенок при наведении */
+        }
+
+        .file-list a {
+            text-decoration: none;
+            color: #0073e6;
+            font-size: 16px;
+        }
+
+        .file-list a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>My Files</h1>
+    </header>
+
+    <nav>
+        <a href="/upload">Upload</a>
+        <a href="/my_files">My Files</a>
+        <a href="/profile">Profile</a>
+        <a href="/logout">Logout</a>
+    </nav>
+
+    <div class="container">
+        <h2>File List</h2>
+        <ul class="file-list">
+            {% for file in files %}
+                <li>
+                    <a href="/getfile?id={{ file[1] }}">{{ file[0].split("/")[-1] }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+</body>
+</html>
