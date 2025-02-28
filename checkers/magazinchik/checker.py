@@ -83,7 +83,7 @@ class Checker(BaseChecker):
 
     def cquit(self, status, public='', private=''):
         if status == Status.OK:
-            print(public)
+            print(private)
             sys.exit(101)
         else:
             print(private, file=sys.stderr)
