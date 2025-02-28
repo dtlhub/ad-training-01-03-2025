@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include <unordered_map>
+#include <random>
 
 #include "../user/user.h"
 
@@ -90,9 +91,7 @@ namespace order {
             entries.push_back(entry);
         }
 
-        std::sort(entries.begin(), entries.end(), [](const auto& a, const auto& b) {
-            return fs::last_write_time(a) > fs::last_write_time(b);
-        });
+        std::shuffle(entries.begin(), entries.end(), std::random_device());
 
         int count = 0;
         for (const auto& entry : entries) {
