@@ -3,12 +3,13 @@ FROM maven:3.8.4-openjdk-17 as builder
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
+RUN mvn clean package -D skipTests
 
 # Run stage
 FROM openjdk:17-slim
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
-
+RUN sudo apt install libssl-dev
 # Create directory for file uploads
 RUN mkdir -p /root/uploads && \
     chmod 777 /root/uploads &&\
