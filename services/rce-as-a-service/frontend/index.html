@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RCE as a Service</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>RCE as a Service</h1>
+
+        <div id="auth-section">
+            <div id="login-form">
+                <h2>Login / Sign Up</h2>
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button id="login-button" class="btn">Login / Sign Up</button>
+                <p id="auth-message" class="message"></p>
+            </div>
+        </div>
+
+        <div id="execution-section" class="hidden">
+            <h2>Welcome, <span id="user-display"></span>!</h2>
+            <button id="logout-button" class="btn btn-secondary">Logout</button>
+
+            <div id="wasm-upload">
+                <h3>Upload WASM Binary</h3>
+                <div class="form-group">
+                    <label for="wasm-file">WASM File:</label>
+                    <input type="file" id="wasm-file" accept=".wasm">
+                </div>
+                <div class="form-group">
+                    <label for="cli-args">CLI Arguments (comma-separated):</label>
+                    <input type="text" id="cli-args" placeholder="arg1,arg2,arg3">
+                </div>
+                <button id="execute-button" class="btn">Execute</button>
+            </div>
+
+            <div id="execution-results">
+                <h3>Execution Results</h3>
+
+                <!-- Error box for execution errors -->
+                <div id="execution-error" class="execution-error hidden">
+                    <h4>Execution Error:</h4>
+                    <pre id="error-content" class="error-content"></pre>
+                </div>
+
+                <div id="output-sections">
+                    <div class="result-container">
+                        <h4>Standard Output:</h4>
+                        <pre id="stdout" class="output"></pre>
+                        <h4>Standard Error:</h4>
+                        <pre id="stderr" class="output"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

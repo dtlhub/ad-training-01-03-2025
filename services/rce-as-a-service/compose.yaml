@@ -1,0 +1,103 @@
+services:
+  caddy:
+    image: caddy:2.7-alpine
+    ports:
+      - "9091:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frontend:/frontend:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - raas
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 256M
+    networks:
+      raasnet:
+        ipv4_address: 172.43.21.4
+
+  raas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    environment:
+      REDIS_URL: redis://172.43.21.3:6379
+      USER_DATA_PATH: /user_data
+      SECRET_KEY_PATH: /secret/secret_key
+    volumes:
+      - secret:/secret
+      - user_data:/user_data
+    depends_on:
+      - valkey
+    healthcheck:
+      test: ["CMD", "pidof", "rce-as-a-service"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "2.0"
+          memory: "512M"
+    networks:
+      raasnet:
+        ipv4_address: 172.43.21.2
+
+  valkey:
+    image: valkey/valkey:8.0.2-alpine
+    ports:
+      - 6379:6379
+    command: ["valkey-server", "--appendonly", "yes"]
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "--raw", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 256M
+    networks:
+      raasnet:
+        ipv4_address: 172.43.21.3
+
+  cleaner:
+    build: cleaner
+    restart: unless-stopped
+    volumes:
+      - user_data:/user_data
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 128M
+
+volumes:
+  user_data:
+  valkey_data:
+  secret:
+  caddy_data:
+  caddy_config:
+
+networks:
+  raasnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.43.21.0/24
+          gateway: 172.43.21.1
