@@ -26,14 +26,6 @@ class Checker(BaseChecker):
         user = User.random()
         session = self.get_initialized_session()
         self.mch.register_user(session, user)
-        # profile = self.mch.profile_check(session)
-        # self.assert_eq(profile.username, user.username, "Username is different")
-
-        # self.assert_eq(
-        #     profile.preferences, user.preferences, "Preferences are different"
-        # )
-
-        # self.mch.logout(session)
         self.mch.login(session, user)
 
     def check_upload(self):
@@ -43,7 +35,6 @@ class Checker(BaseChecker):
         self.mch.login(session, user)
         doc = Document.generate_doc()
         doc.uuid = self.mch.upload(session, document=doc)
-        # add parsing docs
 
     def check_download(self):
         user = User.random()
