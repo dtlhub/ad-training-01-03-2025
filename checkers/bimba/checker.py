@@ -68,6 +68,7 @@ class Checker(BaseChecker):
         self.check_auth()
         self.check_upload()
         self.check_download()
+        self.cquit(Status.OK)
 
     def put(self, flag_id: str, flag: str, vuln: str):
         user = User.random()
