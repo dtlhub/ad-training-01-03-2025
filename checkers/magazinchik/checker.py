@@ -83,7 +83,6 @@ class Checker(BaseChecker):
 
     def cquit(self, status, public='', private=''):
         if status == Status.OK:
-            print(public)
             sys.exit(101)
         else:
             print(private, file=sys.stderr)
@@ -155,8 +154,8 @@ class Checker(BaseChecker):
         self.mch.create_order(session, order_name, order_description, order_price)
 
         flag_id_mod = f"{username}:{password}:{order_name}"
-        print(flag_id_mod)
-        self.cquit(Status.OK, flag_id_mod, flag_id)
+
+        self.cquit(Status.OK, public=json.dumps({"username":username , "order_name":order_name}), private=flag_id_mod)
 
     def get(self, flag_id: str, flag: str, vuln: str):
         session = get_initialized_session()
@@ -166,8 +165,6 @@ class Checker(BaseChecker):
         self.mch.login(session, username, password, Status.CORRUPT)
 
         orders = self.mch.get_order(session, Status.CORRUPT)
-
-        print(f"Server response: {orders}", file=sys.stderr)
 
         self.assert_in(order_name, orders, f"Order '{order_name}' not found in the list", Status.CORRUPT)
         self.assert_in(flag, orders, f"Flag '{flag}' not found in the order description", Status.CORRUPT)
