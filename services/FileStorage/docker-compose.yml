@@ -9,6 +9,7 @@ services:
       - "5000:5000"
     volumes:
       - .:/app
+
   cleaner:
     image: c4tbuts4d/dedcleaner:latest
     restart: unless-stopped
@@ -16,5 +17,5 @@ services:
       - .:/app
     environment:
       - DELETE_AFTER=15m
-      - SLEEP=4m
+      - SLEEP=1m
       - DIRS=/app/uploads
