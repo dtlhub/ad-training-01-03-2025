@@ -32,6 +32,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+
 import org.springframework.beans.factory.annotation.Value;
 
 @Service
@@ -114,5 +116,17 @@ public class DocumentService {
         .getAuthentication().getPrincipal();
         List<Document> documents = documentRepository.findByNameAndUsername(name, userDetails.getUsername());
         return documents;
+    }
+
+    public void cleanOldDocuments(){
+        List<Document> oldDocuments = documentRepository.findOldFiles(LocalDateTime.now().minusMinutes(30));
+        for (Document document : oldDocuments) {
+            File file = new File(uploadDir + "/uploads"+document.getFilename());
+            if(file.delete()){
+                documentRepository.delete(document);
+            };
+            
+        }
+
     }
 }

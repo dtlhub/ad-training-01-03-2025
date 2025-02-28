@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.sql.Date;
-
+import java.time.LocalDateTime;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -104,7 +104,7 @@ public class DocumentController {
                 null, // username will be set in service
                 name,
                 uuid +".docx",
-                new Date(System.currentTimeMillis())
+                LocalDateTime.now()
             );
             
             documentService.uploadDocument(document, file, boyfrend);

@@ -2,6 +2,7 @@ package com.bimba.bimba.models;
 
 import java.io.Serializable;
 import java.sql.Date;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Table;
 import jakarta.persistence.Column;
@@ -31,13 +32,13 @@ public class Document implements Serializable {
     private String filename;
 
     @Column(name = "date")
-    private Date date;
+    private LocalDateTime date;
 
     public Document() {
 
     }
 
-    public Document(String uuid, String username, String name, String filename, Date date) {
+    public Document(String uuid, String username, String name, String filename, LocalDateTime date) {
         this.username = username;
         this.uuid = uuid;
         this.name = name;
@@ -78,11 +79,11 @@ public class Document implements Serializable {
         this.filename = filename;
     }
 
-    public Date getDate() {
+    public LocalDateTime getDate() {
         return date;
     }
 
-    public void setDate(Date date) {
+    public void setDate(LocalDateTime date) {
         this.date = date;
     }
 
