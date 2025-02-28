@@ -1,3 +1,4 @@
+import os
 import requests
 from checklib import *
 import pickle
@@ -7,6 +8,7 @@ import json
 from bs4 import BeautifulSoup
 import re
 import docx
+
 
 PORT = 8070
 
@@ -38,6 +40,7 @@ class Document:
         )
         doc = docx.Document()
         doc.add_paragraph(text)
+        os.makedirs("/tmp/uploads", exist_ok=True)
         doc.save(f"/tmp/uploads/{name}.docx")
         uuid = ""
         data = {
