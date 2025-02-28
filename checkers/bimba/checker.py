@@ -1,10 +1,11 @@
-#!/usr/bin/env python3.11
+#!/usr/bin/env python3
 import sys
 import requests
 
 from checklib import *
 from bimba_lib import *
 import docx2txt
+
 
 class Checker(BaseChecker):
     vulns: int = 1
@@ -25,7 +26,7 @@ class Checker(BaseChecker):
         user = User.random()
         session = self.get_initialized_session()
         self.mch.register_user(session, user)
-        #profile = self.mch.profile_check(session)
+        # profile = self.mch.profile_check(session)
         # self.assert_eq(profile.username, user.username, "Username is different")
 
         # self.assert_eq(
@@ -42,7 +43,7 @@ class Checker(BaseChecker):
         self.mch.login(session, user)
         doc = Document.generate_doc()
         doc.uuid = self.mch.upload(session, document=doc)
-        #add parsing docs
+        # add parsing docs
 
     def check_download(self):
         user = User.random()
@@ -51,14 +52,16 @@ class Checker(BaseChecker):
         self.mch.login(session, user)
         doc = Document.generate_doc()
         self.mch.upload(session, document=doc)
-        document_card =  self.mch.search_document(session, doc.name)
+        document_card = self.mch.search_document(session, doc.name)
         content = self.mch.download(session, document_card.uuid)
         if not content:
             self.cquit(Status.MUMBLE, "Download error", "Failed to download document")
-        temp = docx2txt.process(f'/tmp/{document_card.uuid}.docx')
-        text = ' '.join([line.replace('\t', ' ') for line in temp.split('\n') if line])
-        expected_text = doc.text.replace('{{name}}', doc.data['name']).replace('{{age}}', doc.data['age'])
-        if expected_text != text[164:-80]:
+        temp = docx2txt.process(f"/tmp/{document_card.uuid}.docx")
+        text = " ".join([line.replace("\t", " ") for line in temp.split("\n") if line])
+        expected_text = doc.text.replace("{{name}}", doc.data["name"]).replace(
+            "{{age}}", doc.data["age"]
+        )
+        if expected_text != text:
             self.cquit(Status.MUMBLE, "Document error", "Document data is different")
 
     def check_search(self):
@@ -78,19 +81,22 @@ class Checker(BaseChecker):
         doc = Document.generate_doc()
         doc.data = {"name": flag, "age": random.randint(18, 100)}
         self.mch.upload(session, doc)
-        self.cquit(Status.OK, json.dumps({"uuid": doc.uuid, "username":user.username, "location": "documents"}), user.serialize())
-    
+        self.cquit(
+            Status.OK,
+            json.dumps({"username": user.username, "location": "documents"}),
+            user.serialize(),
+        )
+
     def get(self, flag_id: str, flag: str, vuln: str):
         user = User.deserialize(flag_id)
         session = get_initialized_session()
         self.mch.login(session, user, status=Status.CORRUPT)
-        document_card = self.mch.search_document(session, '')
+        document_card = self.mch.search_document(session, "")
         content = self.mch.download(session, document_card.uuid)
-        temp = docx2txt.process(f'/tmp/{document_card.uuid}.docx')
-        text = ' '.join([line.replace('\t', ' ') for line in temp.split('\n') if line])
+        temp = docx2txt.process(f"/tmp/{document_card.uuid}.docx")
+        text = " ".join([line.replace("\t", " ") for line in temp.split("\n") if line])
         self.assert_in(flag, text, "Document text is invalid", Status.CORRUPT)
         self.cquit(Status.OK)
-        
 
 
 if __name__ == "__main__":

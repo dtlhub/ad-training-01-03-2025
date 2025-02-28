@@ -1,12 +1,10 @@
 package com.bimba.bimba.payloads.response;
 
-
 public class JwtResponse {
   private String token;
   private String type = "Bearer";
   private Long id;
   private String username;
-
 
   public JwtResponse(String accessToken, Long id, String username) {
     this.token = accessToken;

@@ -45,7 +45,7 @@ import org.springframework.http.HttpStatus;
 @RestController
 @RequestMapping("/document")
 public class DocumentController {
-    
+
     @Autowired
     DocumentService documentService;
     @Autowired
@@ -53,62 +53,54 @@ public class DocumentController {
 
     @GetMapping("/")
     public ModelAndView getDocuments() {
-        List<Document> documents= documentService.getUserDocuments();
+        List<Document> documents = documentService.getUserDocuments();
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext()
             .getAuthentication().getPrincipal();
         Map<String, Object> params = new HashMap<String, Object>();
-		params.put("documents", documents);
+        params.put("documents", documents);
         return new ModelAndView("documents", params);
     }
-    
 
     @GetMapping("/download/{uuid}")
     public ResponseEntity<?> get(@PathVariable UUID uuid) throws ParserConfigurationException, SAXException, IOException {
-
         byte[] content = documentService.getDocument(uuid.toString());
         HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE); // (3) Content-Type: application/octet-stream
-        httpHeaders.set(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(String.format("report-%s.txt", uuid.toString())).build().toString()); // (4) Content-Disposition: attachment; filename="demo-file.txt"
-        return ResponseEntity.ok().headers(httpHeaders).body(content); // (5) Return Response
-    
+        httpHeaders.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        httpHeaders.set(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(String.format("report-%s.txt", uuid.toString())).build().toString());
+        return ResponseEntity.ok().headers(httpHeaders).body(content);
     }
 
     @GetMapping("/search")
     public ModelAndView getMethodName(@RequestParam String name) {
         List<Document> documents = new ArrayList<>();
-        if (name.isEmpty()){
+        if (name.isEmpty()) {
             documents = documentService.getUserDocuments();
-        }else{
+        } else {
             documents = documentService.searchDocuments(name);
         }
         Map<String, Object> params = new HashMap<String, Object>();
-		params.put("documents", documents);
-    
+        params.put("documents", documents);
         return new ModelAndView("documents", params);
     }
-    
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadDocument(
             @RequestParam("file") MultipartFile file,
             @RequestParam("name") String name,
-            @RequestParam("object") String object ) {
+            @RequestParam("object") String object) {
         try {
             String uuid = UUID.randomUUID().toString();
             Boyfrend boyfrend = objectMapper.readValue(object, Boyfrend.class);
-            // System.out.println("hui");
-            // System.out.println(boyfrend.getName());
-            // System.out.println("hui");
             Document document = new Document(
                 uuid,
-                null, // username will be set in service
+                null,
                 name,
-                uuid +".docx",
+                uuid + ".docx",
                 LocalDateTime.now()
             );
-            
+
             documentService.uploadDocument(document, file, boyfrend);
-            
+
             return ResponseEntity.ok(new DocumentResponse(uuid, "File uploaded successfully!"));
         } catch (Exception e) {
             return ResponseEntity

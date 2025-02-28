@@ -1,6 +1,5 @@
 package com.bimba.bimba.payloads.response;
 
-
 public class MessageResponse {
   private String message;
 

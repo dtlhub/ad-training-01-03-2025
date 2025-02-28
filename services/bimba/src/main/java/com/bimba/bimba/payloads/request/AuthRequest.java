@@ -1,11 +1,10 @@
 package com.bimba.bimba.payloads.request;
 
-
 import jakarta.validation.constraints.NotBlank;
 
 public class AuthRequest {
 	@NotBlank
-  private String username;
+  	private String username;
 
 	@NotBlank
 	private String password;

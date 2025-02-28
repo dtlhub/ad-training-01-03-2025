@@ -25,7 +25,7 @@ public class Document implements Serializable {
     @Column(name = "username")
     private String username;
 
-    @Column(name="name")
+    @Column(name = "name")
     private String name;
 
     @Column(name = "filename")
@@ -35,7 +35,6 @@ public class Document implements Serializable {
     private LocalDateTime date;
 
     public Document() {
-
     }
 
     public Document(String uuid, String username, String name, String filename, LocalDateTime date) {
@@ -70,7 +69,6 @@ public class Document implements Serializable {
         this.username = username;
     }
 
-
     public String getFilename() {
         return filename;
     }
@@ -94,6 +92,4 @@ public class Document implements Serializable {
     public void setName(String name) {
         this.name = name;
     }
-    
-
 }

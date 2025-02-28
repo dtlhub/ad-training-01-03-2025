@@ -3,10 +3,7 @@ package com.bimba.bimba.report;
 import fr.opensagres.xdocreport.template.formatter.AbstractDocumentFormatter;
 import fr.opensagres.xdocreport.template.formatter.DirectivesStack;
 
-
-public class MustacheDocumentFormatter 
-    extends AbstractDocumentFormatter{
-
+public class MustacheDocumentFormatter extends AbstractDocumentFormatter {
     @Override
     public String formatAsFieldItemList(String content, String fieldName, boolean forceAsField) {
         if (fieldName.startsWith("___")) {
@@ -45,7 +42,7 @@ public class MustacheDocumentFormatter
         if (dotIndex > 0) {
             baseFieldName = fieldName.substring(0, dotIndex);
         }
-        
+
         if (baseFieldName.startsWith("___")) {
             return "${/if}";
         }
@@ -64,14 +61,13 @@ public class MustacheDocumentFormatter
     @Override
     public boolean containsInterpolation(String content) {
         if (content == null) return false;
-        return content.contains("{{") || content.contains("}}") || 
+        return content.contains("{{") || content.contains("}}") ||
                content.contains("${") || content.contains("}");
     }
 
     @Override
     public int extractListDirectiveInfo(String content, DirectivesStack directives,
             boolean dontRemoveListDirectiveInfo) {
-        // Simple implementation - finds the first occurrence of a list directive
         if (content == null) return -1;
         return content.indexOf("{{#");
     }
@@ -83,7 +79,7 @@ public class MustacheDocumentFormatter
 
     @Override
     public int getIndexOfScript(String fieldName) {
-        return -1; // Mustache doesn't support scripts
+        return -1;
     }
 
     @Override
@@ -131,12 +127,12 @@ public class MustacheDocumentFormatter
 
     @Override
     public String getStartNoParse() {
-        return "{{=<% %>=}}"; // Changes delimiters to avoid parsing
+        return "{{=<% %>=}}";
     }
 
     @Override
     public String getEndNoParse() {
-        return "<%={{ }}=%>"; // Restores default delimiters
+        return "<%={{ }}=%>";
     }
 
     @Override
@@ -147,12 +143,11 @@ public class MustacheDocumentFormatter
     @Override
     public boolean isInstruction(String tagContent) {
         if (tagContent == null) return false;
-        // Handle both Mustache and custom syntax
         if (tagContent.startsWith("${")) {
             return tagContent.contains("#if") || tagContent.contains("/if");
         }
-        return tagContent.startsWith("#") || 
-               tagContent.startsWith("/") || 
+        return tagContent.startsWith("#") ||
+               tagContent.startsWith("/") ||
                tagContent.startsWith("^") ||
                tagContent.startsWith(">");
     }
@@ -166,6 +161,5 @@ public class MustacheDocumentFormatter
     protected boolean isModelField(String content, String fieldName) {
         return content != null && content.contains("{{" + fieldName + "}}");
     }
-    
 }
 

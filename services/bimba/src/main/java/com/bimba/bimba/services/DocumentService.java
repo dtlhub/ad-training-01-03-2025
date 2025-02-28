@@ -56,57 +56,38 @@ public class DocumentService {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext()
             .getAuthentication().getPrincipal();
         String filename = documentRepository.findByUuidAndUsername(uuid, userDetails.getUsername()).getFilename();
-        // TODO add checks that filename is not null
-        System.out.println(filename);
-        try(InputStream is =  new FileInputStream(uploadDir+"/uploads/" + filename)){
-
+        try (InputStream is =  new FileInputStream(uploadDir + "/uploads/" + filename)){
                 return is.readAllBytes();
             }
         }
-        // try (InputStream is = DocumentService.class.getResourceAsStream(uploadDir+"/uploads/" + filename)) {
-        //     if (is == null){
-        //         System.out.println("HUI");
-        //         return null;}
-        //     return is.readAllBytes();
-        // }
+
         private IContext convert(Boyfrend boyfrend, IXDocReport report) throws IllegalAccessException,XDocReportException {
-            //Map<String, Object> map = new HashMap<>();
-            
             IContext context = report.createContext();
             context.put("name", boyfrend.getName());
             context.put("age", boyfrend.getAge());
             context.put("money", boyfrend.getMoney());
-        
+
             return context;
         }
-    
+
 
     public void uploadDocument(Document document, MultipartFile file, Boyfrend boyfrend) throws IOException, XDocReportException,IllegalAccessException {
-        // Get current user
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext()
             .getAuthentication().getPrincipal();
-        
-        // Set username in document
+
         document.setUsername(userDetails.getUsername());
-        //File tmp = new File("/tmp/aaaa.docx");
-        //file.transferTo(tmp);
-        // Create upload directory if it doesn't exist
         Path uploadPath = Paths.get(uploadDir + "/uploads");
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
         File out = new File(uploadDir + "/uploads");
         ITemplateEngine engine = new MustacheTemplateEngine();
-        // InputStream is = new FileInputStream(tmp);
-        // System.out.println("HHHHH");
 
         IXDocReport report = XDocReportRegistry.getRegistry().loadReport(file.getInputStream(), engine, true);//TemplateEngineKind.Freemarker);
 
         report.addPreprocessor( "word/fontTable.xml", DocxDocumentPreprocessor.INSTANCE );
         IContext context = convert(boyfrend, report);
-        //context = report.createContext();
 
-        
         report.process( context, new FileOutputStream( new File(out, document.getUuid()+".docx" )) );
 
         documentRepository.save(document);
@@ -125,8 +106,6 @@ public class DocumentService {
             if(file.delete()){
                 documentRepository.delete(document);
             };
-            
         }
-
     }
 }

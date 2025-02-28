@@ -13,9 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableJpaRepositories("com.bimba.bimba.repository")
 @EnableScheduling
 public class BimbaApplication {
-
 	public static void main(String[] args) {
 		SpringApplication.run(BimbaApplication.class, args);
 	}
-
 }

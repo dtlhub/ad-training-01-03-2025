@@ -1,6 +1,5 @@
 package com.bimba.bimba.models;
 
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -9,8 +8,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 @Entity
-@Table(name = "users", 
-    uniqueConstraints = { 
+@Table(name = "users",
+    uniqueConstraints = {
       @UniqueConstraint(columnNames = "username")
     })
 public class User {
@@ -22,17 +21,15 @@ public class User {
   @Size(max = 20)
   private String username;
 
-
   @NotBlank
   @Size(max = 120)
   private String password;
 
   @ManyToMany(fetch = FetchType.LAZY)
-  @JoinTable(  name = "user_roles", 
-        joinColumns = @JoinColumn(name = "user_id"), 
+  @JoinTable(name = "user_roles",
+        joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id"))
   private Set<Role> roles = new HashSet<>();
-
 
   public User() {
   }
@@ -65,6 +62,7 @@ public class User {
   public void setPassword(String password) {
     this.password = password;
   }
+
   public Set<Role> getRoles() {
     return roles;
   }
@@ -72,5 +70,4 @@ public class User {
   public void setRoles(Set<Role> roles) {
     this.roles = roles;
   }
-
 }

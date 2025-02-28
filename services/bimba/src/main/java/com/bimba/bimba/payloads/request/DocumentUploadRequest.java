@@ -7,6 +7,4 @@ import jakarta.validation.constraints.NotBlank;
 public class DocumentUploadRequest {
     @NotBlank
     private Boyfrend[] boyfrends;
-
-    
 }

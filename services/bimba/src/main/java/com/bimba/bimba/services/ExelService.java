@@ -11,13 +11,11 @@ import javax.xml.parsers.ParserConfigurationException;
 
 @Service
 public class ExelService {
-
     public Document testXXE(String xml) throws ParserConfigurationException, SAXException, IOException{
-    DOMUtils dom = new DOMUtils();
-    Document doc = dom.load(xml);
-    System.out.println(doc);
-    return doc;
-}
-
+        DOMUtils dom = new DOMUtils();
+        Document doc = dom.load(xml);
+        System.out.println(doc);
+        return doc;
+    }
 }
 

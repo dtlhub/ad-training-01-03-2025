@@ -2,7 +2,6 @@ package com.bimba.bimba.models;
 import jakarta.validation.constraints.NotBlank;
 
 public class Boyfrend {
-    
     @NotBlank
     private String name = "masik";
 
@@ -34,5 +33,5 @@ public class Boyfrend {
 
     public void setMoney(Integer money) {
         this.money = money;
-    } 
+    }
 }
