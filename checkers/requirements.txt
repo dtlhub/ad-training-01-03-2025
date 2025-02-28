@@ -1,1 +1,5 @@
 checklib
+requests==2.31.0
+beautifulsoup4==4.12.3
+python-docx==1.1.2
+docx2txt==0.8
