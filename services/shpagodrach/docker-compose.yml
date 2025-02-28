@@ -1,0 +1,21 @@
+services:
+  task:
+    build: service
+    restart: unless-stopped
+    ports:
+      - 7272:1337
+    pids_limit: 512
+    mem_limit: 512M
+    cpus: 1.0
+    volumes:
+      - "./gladiators:/tmp/gladiators"
+
+  cleaner:
+    image: c4tbuts4d/dedcleaner:latest
+    restart: unless-stopped
+    volumes:
+      - "./gladiators:/tmp/gladiators"
+    environment:
+      - DELETE_AFTER=15m
+      - SLEEP=4m
+      - DIRS=/tmp/gladiators
