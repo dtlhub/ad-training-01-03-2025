@@ -1,7 +1,8 @@
-version: '3.8'
+version: '2.4'
 
 services:
   app:
+    restart: unless-stopped
     build: .
     ports:
       - "8070:8070"

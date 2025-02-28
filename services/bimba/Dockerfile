@@ -12,12 +12,11 @@ COPY --from=builder /app/target/*.jar app.jar
 
 # Create directory for file uploads
 RUN mkdir -p /root/uploads && \
-    chmod 777 /root/uploads
+    chmod 777 /root/uploads \
+    mkdir -p /app/config && \
+    openssl rand -hex 64 > /app/config/jwt_secret.txt && \
+    chmod 600 /app/config/jwt_secret.txt
 
 EXPOSE 8070
 
-# Use environment variable for JWT secret
-ENV JWT_SECRET=default_secret_replace_in_production
-
-ENTRYPOINT ["java", "-jar", "app.jar", \
-           "--bezkoder.app.jwtSecret=${JWT_SECRET}"]
+ENTRYPOINT ["java","-jar","app.jar"]
