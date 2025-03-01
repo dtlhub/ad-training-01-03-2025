@@ -54,8 +54,6 @@ public class DocumentController {
     @GetMapping("/")
     public ModelAndView getDocuments() {
         List<Document> documents = documentService.getUserDocuments();
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext()
-            .getAuthentication().getPrincipal();
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("documents", documents);
         return new ModelAndView("documents", params);

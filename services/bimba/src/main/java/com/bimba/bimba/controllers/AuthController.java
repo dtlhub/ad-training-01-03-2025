@@ -46,7 +46,6 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody AuthRequest req) {
-        System.out.println(req.getUsername());
         if (userRepository.existsByUsername(req.getUsername())) {
             return ResponseEntity
                 .badRequest()
