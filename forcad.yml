@@ -1,0 +1,50 @@
+game:
+  default_score: 2500
+  flag_lifetime: 10
+  game_hardness: 10.0
+  inflation: true
+  mode: classic
+  round_time: 60
+  start_time: "2025-03-01T15:00:00"
+  timezone: Europe/Moscow
+
+tasks:
+  - checker: bimba/checker.py
+    checker_timeout: 20
+    checker_type: gevent_pfr
+    gets: 1
+    name: bimba
+    places: 1
+    puts: 1
+
+  - checker: FileStorage/checker.py
+    checker_timeout: 20
+    checker_type: gevent_pfr
+    gets: 1
+    name: file_storage
+    places: 1
+    puts: 1
+
+  - checker: magazinchik/checker.py
+    checker_timeout: 20
+    checker_type: gevent_pfr
+    gets: 1
+    name: magazinchik
+    places: 1
+    puts: 1
+
+  - checker: rce-as-a-service/checker.py
+    checker_timeout: 20
+    checker_type: gevent_pfr
+    gets: 1
+    name: rce-as-a-service
+    places: 1
+    puts: 1
+
+  - checker: shpagodrach/checker.py
+    checker_timeout: 20
+    checker_type: gevent
+    gets: 1
+    name: shpagodrach
+    places: 1
+    puts: 1
